@@ -1,0 +1,10 @@
+.next
+node_modules
+pnpm-lock.yaml
+
+# Generated
+next-env.d.ts
+
+# Playwright artifacts
+test-results
+playwright-report
