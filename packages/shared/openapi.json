@@ -1,0 +1,2725 @@
+{
+  "components": {
+    "schemas": {
+      "Aggregation": {
+        "enum": [
+          "MAX",
+          "MIN",
+          "AVG",
+          "COUNT",
+          "SUM",
+          "RATE"
+        ],
+        "title": "Aggregation",
+        "type": "string"
+      },
+      "Body_upload_trackman_csv_api_v1_imports_trackman_csv_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_trackman_csv_api_v1_imports_trackman_csv_post",
+        "type": "object"
+      },
+      "CurrentUser": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "organization_name": {
+            "title": "Organization Name",
+            "type": "string"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "email",
+          "role",
+          "organization_id",
+          "organization_name"
+        ],
+        "title": "CurrentUser",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthOut": {
+        "properties": {
+          "database": {
+            "title": "Database",
+            "type": "string"
+          },
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "version",
+          "environment",
+          "database"
+        ],
+        "title": "HealthOut",
+        "type": "object"
+      },
+      "ImportDetailOut": {
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "import_metadata": {
+            "additionalProperties": true,
+            "title": "Import Metadata",
+            "type": "object"
+          },
+          "import_type": {
+            "title": "Import Type",
+            "type": "string"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ImportIssueOut"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "rows_accepted": {
+            "title": "Rows Accepted",
+            "type": "integer"
+          },
+          "rows_rejected": {
+            "title": "Rows Rejected",
+            "type": "integer"
+          },
+          "rows_total": {
+            "title": "Rows Total",
+            "type": "integer"
+          },
+          "source_status": {
+            "$ref": "#/components/schemas/SourceStatus"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImportStatus"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "import_type",
+          "filename",
+          "status",
+          "source_status",
+          "rows_total",
+          "rows_accepted",
+          "rows_rejected",
+          "created_at",
+          "completed_at",
+          "error_message"
+        ],
+        "title": "ImportDetailOut",
+        "type": "object"
+      },
+      "ImportIssueCode": {
+        "description": "Machine-readable reasons a row or file was rejected or flagged.",
+        "enum": [
+          "SCHEMA_UNKNOWN",
+          "MISSING_REQUIRED_FIELD",
+          "INVALID_VALUE",
+          "INVALID_UNIT",
+          "PLAYER_UNRESOLVED",
+          "AMBIGUOUS_SESSION"
+        ],
+        "title": "ImportIssueCode",
+        "type": "string"
+      },
+      "ImportIssueOut": {
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ImportIssueCode"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "row_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row Number"
+          }
+        },
+        "required": [
+          "row_number",
+          "code",
+          "field",
+          "message"
+        ],
+        "title": "ImportIssueOut",
+        "type": "object"
+      },
+      "ImportOut": {
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "import_metadata": {
+            "additionalProperties": true,
+            "title": "Import Metadata",
+            "type": "object"
+          },
+          "import_type": {
+            "title": "Import Type",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "rows_accepted": {
+            "title": "Rows Accepted",
+            "type": "integer"
+          },
+          "rows_rejected": {
+            "title": "Rows Rejected",
+            "type": "integer"
+          },
+          "rows_total": {
+            "title": "Rows Total",
+            "type": "integer"
+          },
+          "source_status": {
+            "$ref": "#/components/schemas/SourceStatus"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImportStatus"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "import_type",
+          "filename",
+          "status",
+          "source_status",
+          "rows_total",
+          "rows_accepted",
+          "rows_rejected",
+          "created_at",
+          "completed_at",
+          "error_message"
+        ],
+        "title": "ImportOut",
+        "type": "object"
+      },
+      "ImportResultOut": {
+        "properties": {
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "hit_events": {
+            "title": "Hit Events",
+            "type": "integer"
+          },
+          "is_duplicate": {
+            "title": "Is Duplicate",
+            "type": "boolean"
+          },
+          "metric_observations": {
+            "title": "Metric Observations",
+            "type": "integer"
+          },
+          "new_personal_records": {
+            "title": "New Personal Records",
+            "type": "integer"
+          },
+          "pitch_events": {
+            "title": "Pitch Events",
+            "type": "integer"
+          },
+          "raw_import_id": {
+            "format": "uuid",
+            "title": "Raw Import Id",
+            "type": "string"
+          },
+          "rows_accepted": {
+            "title": "Rows Accepted",
+            "type": "integer"
+          },
+          "rows_rejected": {
+            "title": "Rows Rejected",
+            "type": "integer"
+          },
+          "rows_total": {
+            "title": "Rows Total",
+            "type": "integer"
+          },
+          "sessions_created": {
+            "title": "Sessions Created",
+            "type": "integer"
+          },
+          "sessions_updated": {
+            "title": "Sessions Updated",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "sync_jobs_queued": {
+            "title": "Sync Jobs Queued",
+            "type": "integer"
+          },
+          "unresolved_players": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unresolved Players",
+            "type": "array"
+          }
+        },
+        "required": [
+          "raw_import_id",
+          "status",
+          "is_duplicate",
+          "sessions_created",
+          "sessions_updated",
+          "pitch_events",
+          "hit_events",
+          "metric_observations",
+          "new_personal_records",
+          "sync_jobs_queued",
+          "rows_total",
+          "rows_accepted",
+          "rows_rejected",
+          "unresolved_players"
+        ],
+        "title": "ImportResultOut",
+        "type": "object"
+      },
+      "ImportStatus": {
+        "description": "Lifecycle of a single ingestion attempt.",
+        "enum": [
+          "RECEIVED",
+          "PROCESSING",
+          "SUCCESS",
+          "PARTIAL",
+          "FAILED",
+          "SKIPPED_DUPLICATE"
+        ],
+        "title": "ImportStatus",
+        "type": "string"
+      },
+      "IntegrationHealthOut": {
+        "properties": {
+          "failed_imports_7d": {
+            "title": "Failed Imports 7D",
+            "type": "integer"
+          },
+          "futures_updates_pending": {
+            "title": "Futures Updates Pending",
+            "type": "integer"
+          },
+          "last_import_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Import Status"
+          },
+          "last_successful_import_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Successful Import At"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "sessions_awaiting_verification": {
+            "title": "Sessions Awaiting Verification",
+            "type": "integer"
+          },
+          "unresolved_players": {
+            "title": "Unresolved Players",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "provider",
+          "last_successful_import_at",
+          "last_import_status",
+          "failed_imports_7d",
+          "sessions_awaiting_verification",
+          "unresolved_players",
+          "futures_updates_pending"
+        ],
+        "title": "IntegrationHealthOut",
+        "type": "object"
+      },
+      "MetricCategory": {
+        "enum": [
+          "PITCHING",
+          "HITTING",
+          "THROWING",
+          "TRAINING"
+        ],
+        "title": "MetricCategory",
+        "type": "string"
+      },
+      "MetricComparison": {
+        "properties": {
+          "current": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current"
+          },
+          "current_sample": {
+            "title": "Current Sample",
+            "type": "integer"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta"
+          },
+          "percent_change": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent Change"
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous"
+          },
+          "previous_sample": {
+            "title": "Previous Sample",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "current",
+          "previous",
+          "delta",
+          "percent_change",
+          "current_sample",
+          "previous_sample"
+        ],
+        "title": "MetricComparison",
+        "type": "object"
+      },
+      "MetricDefinitionOut": {
+        "properties": {
+          "aggregation": {
+            "$ref": "#/components/schemas/Aggregation"
+          },
+          "calculation_version": {
+            "title": "Calculation Version",
+            "type": "integer"
+          },
+          "category": {
+            "$ref": "#/components/schemas/MetricCategory"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "display_precision": {
+            "title": "Display Precision",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_headline": {
+            "title": "Is Headline",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "min_sample_size": {
+            "title": "Min Sample Size",
+            "type": "integer"
+          },
+          "record_direction": {
+            "$ref": "#/components/schemas/RecordDirection"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "display_name",
+          "category",
+          "unit",
+          "aggregation",
+          "record_direction",
+          "display_precision",
+          "min_sample_size",
+          "is_headline",
+          "calculation_version"
+        ],
+        "title": "MetricDefinitionOut",
+        "type": "object"
+      },
+      "MetricSeriesOut": {
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/MetricDefinitionOut"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/MetricSeriesPointOut"
+            },
+            "title": "Points",
+            "type": "array"
+          },
+          "time_range": {
+            "title": "Time Range",
+            "type": "string"
+          }
+        },
+        "required": [
+          "definition",
+          "time_range",
+          "points"
+        ],
+        "title": "MetricSeriesOut",
+        "type": "object"
+      },
+      "MetricSeriesPointOut": {
+        "properties": {
+          "observed_on": {
+            "format": "date",
+            "title": "Observed On",
+            "type": "string"
+          },
+          "sample_size": {
+            "title": "Sample Size",
+            "type": "integer"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "source_status": {
+            "$ref": "#/components/schemas/SourceStatus"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "session_id",
+          "observed_on",
+          "value",
+          "sample_size",
+          "source_status"
+        ],
+        "title": "MetricSeriesPointOut",
+        "type": "object"
+      },
+      "MetricSummaryOut": {
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/MetricDefinitionOut"
+          },
+          "latest": {
+            "$ref": "#/components/schemas/MetricValue"
+          },
+          "record": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonalRecordOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "window": {
+            "$ref": "#/components/schemas/MetricComparison"
+          }
+        },
+        "required": [
+          "definition",
+          "latest",
+          "window",
+          "record"
+        ],
+        "title": "MetricSummaryOut",
+        "type": "object"
+      },
+      "MetricValue": {
+        "description": "A number that always travels with its unit and its evidence.",
+        "properties": {
+          "observed_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed On"
+          },
+          "sample_size": {
+            "default": 0,
+            "title": "Sample Size",
+            "type": "integer"
+          },
+          "source_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "value",
+          "unit"
+        ],
+        "title": "MetricValue",
+        "type": "object"
+      },
+      "PersonalRecordEventOut": {
+        "properties": {
+          "achieved_on": {
+            "format": "date",
+            "title": "Achieved On",
+            "type": "string"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta"
+          },
+          "display_precision": {
+            "title": "Display Precision",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "metric_display_name": {
+            "title": "Metric Display Name",
+            "type": "string"
+          },
+          "metric_key": {
+            "title": "Metric Key",
+            "type": "string"
+          },
+          "new_value": {
+            "title": "New Value",
+            "type": "number"
+          },
+          "player_display_name": {
+            "title": "Player Display Name",
+            "type": "string"
+          },
+          "player_id": {
+            "format": "uuid",
+            "title": "Player Id",
+            "type": "string"
+          },
+          "previous_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Value"
+          },
+          "sample_size": {
+            "title": "Sample Size",
+            "type": "integer"
+          },
+          "source_status": {
+            "$ref": "#/components/schemas/SourceStatus"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "player_id",
+          "player_display_name",
+          "metric_key",
+          "metric_display_name",
+          "unit",
+          "display_precision",
+          "previous_value",
+          "new_value",
+          "delta",
+          "sample_size",
+          "achieved_on",
+          "source_status"
+        ],
+        "title": "PersonalRecordEventOut",
+        "type": "object"
+      },
+      "PersonalRecordOut": {
+        "properties": {
+          "achieved_on": {
+            "format": "date",
+            "title": "Achieved On",
+            "type": "string"
+          },
+          "display_precision": {
+            "title": "Display Precision",
+            "type": "integer"
+          },
+          "is_manual_override": {
+            "default": false,
+            "title": "Is Manual Override",
+            "type": "boolean"
+          },
+          "metric_display_name": {
+            "title": "Metric Display Name",
+            "type": "string"
+          },
+          "metric_key": {
+            "title": "Metric Key",
+            "type": "string"
+          },
+          "sample_size": {
+            "title": "Sample Size",
+            "type": "integer"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "source_status": {
+            "$ref": "#/components/schemas/SourceStatus"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "metric_key",
+          "metric_display_name",
+          "unit",
+          "display_precision",
+          "value",
+          "sample_size",
+          "achieved_on",
+          "session_id",
+          "source_status"
+        ],
+        "title": "PersonalRecordOut",
+        "type": "object"
+      },
+      "PlayerOverviewOut": {
+        "properties": {
+          "last_session": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/MetricSummaryOut"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerSummary"
+          },
+          "sessions_in_window": {
+            "title": "Sessions In Window",
+            "type": "integer"
+          },
+          "time_range": {
+            "title": "Time Range",
+            "type": "string"
+          }
+        },
+        "required": [
+          "player",
+          "time_range",
+          "last_session",
+          "sessions_in_window",
+          "metrics"
+        ],
+        "title": "PlayerOverviewOut",
+        "type": "object"
+      },
+      "PlayerSummary": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "bats": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bats"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "first_name": {
+            "title": "First Name",
+            "type": "string"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "graduation_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graduation Year"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_name": {
+            "title": "Last Name",
+            "type": "string"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "preferred_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Name"
+          },
+          "throws": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Throws"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "full_name",
+          "first_name",
+          "last_name",
+          "active"
+        ],
+        "title": "PlayerSummary",
+        "type": "object"
+      },
+      "RecordDirection": {
+        "description": "Which direction of change counts as a personal record.",
+        "enum": [
+          "HIGHER_IS_BETTER",
+          "LOWER_IS_BETTER",
+          "NONE"
+        ],
+        "title": "RecordDirection",
+        "type": "string"
+      },
+      "ResolveIdentityIn": {
+        "description": "Attach an unknown vendor athlete to one of our players.\n\n`player_id` is required and explicit: there is no \"match by name\" option,\nby design.",
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "player_id": {
+            "format": "uuid",
+            "title": "Player Id",
+            "type": "string"
+          },
+          "reprocess": {
+            "default": true,
+            "title": "Reprocess",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "player_id"
+        ],
+        "title": "ResolveIdentityIn",
+        "type": "object"
+      },
+      "ResolveIdentityOut": {
+        "description": "What a mapping actually recovered.",
+        "properties": {
+          "imports_reprocessed": {
+            "title": "Imports Reprocessed",
+            "type": "integer"
+          },
+          "new_personal_records": {
+            "title": "New Personal Records",
+            "type": "integer"
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerSummary"
+          }
+        },
+        "required": [
+          "player",
+          "imports_reprocessed",
+          "new_personal_records"
+        ],
+        "title": "ResolveIdentityOut",
+        "type": "object"
+      },
+      "Role": {
+        "description": "Platform roles. PARENT is deliberately not implemented yet.",
+        "enum": [
+          "ADMIN",
+          "COACH",
+          "PLAYER"
+        ],
+        "title": "Role",
+        "type": "string"
+      },
+      "SessionOut": {
+        "properties": {
+          "hit_count": {
+            "default": 0,
+            "title": "Hit Count",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "pitch_count": {
+            "default": 0,
+            "title": "Pitch Count",
+            "type": "integer"
+          },
+          "session_date": {
+            "format": "date",
+            "title": "Session Date",
+            "type": "string"
+          },
+          "session_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Type"
+          },
+          "source_status": {
+            "$ref": "#/components/schemas/SourceStatus"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "venue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue"
+          },
+          "verified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verified At"
+          }
+        },
+        "required": [
+          "id",
+          "session_date",
+          "source_status"
+        ],
+        "title": "SessionOut",
+        "type": "object"
+      },
+      "SourceStatus": {
+        "description": "Confidence level of vendor-supplied data.\n\nTrackMan can publish a session as PRELIMINARY and later republish it as\nVERIFIED with corrected values. Everything derived from an event carries the\nstatus of the data it was derived from so the UI can label it honestly.",
+        "enum": [
+          "PRELIMINARY",
+          "VERIFIED"
+        ],
+        "title": "SourceStatus",
+        "type": "string"
+      },
+      "SyncJobOut": {
+        "properties": {
+          "attempt_count": {
+            "title": "Attempt Count",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "destination": {
+            "title": "Destination",
+            "type": "string"
+          },
+          "destination_field": {
+            "title": "Destination Field",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "metric_display_name": {
+            "title": "Metric Display Name",
+            "type": "string"
+          },
+          "metric_key": {
+            "title": "Metric Key",
+            "type": "string"
+          },
+          "player_display_name": {
+            "title": "Player Display Name",
+            "type": "string"
+          },
+          "player_id": {
+            "format": "uuid",
+            "title": "Player Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SyncStatus"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "player_id",
+          "player_display_name",
+          "metric_key",
+          "metric_display_name",
+          "destination",
+          "destination_field",
+          "value",
+          "unit",
+          "status",
+          "attempt_count",
+          "last_error",
+          "created_at"
+        ],
+        "title": "SyncJobOut",
+        "type": "object"
+      },
+      "SyncStatus": {
+        "enum": [
+          "PENDING",
+          "SYNCED",
+          "FAILED",
+          "MANUAL_REQUIRED"
+        ],
+        "title": "SyncStatus",
+        "type": "string"
+      },
+      "TimeRange": {
+        "description": "Windows the dashboards offer.",
+        "enum": [
+          "today",
+          "7d",
+          "30d",
+          "90d",
+          "1y",
+          "all"
+        ],
+        "title": "TimeRange",
+        "type": "string"
+      },
+      "TodaySnapshotOut": {
+        "properties": {
+          "athletes_trained": {
+            "title": "Athletes Trained",
+            "type": "integer"
+          },
+          "new_personal_records": {
+            "title": "New Personal Records",
+            "type": "integer"
+          },
+          "on_date": {
+            "format": "date",
+            "title": "On Date",
+            "type": "string"
+          },
+          "sessions": {
+            "title": "Sessions",
+            "type": "integer"
+          },
+          "tracked_events": {
+            "title": "Tracked Events",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "on_date",
+          "athletes_trained",
+          "sessions",
+          "tracked_events",
+          "new_personal_records"
+        ],
+        "title": "TodaySnapshotOut",
+        "type": "object"
+      },
+      "UnresolvedIdentityOut": {
+        "properties": {
+          "external_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Display Name"
+          },
+          "external_id": {
+            "title": "External Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "occurrence_count": {
+            "title": "Occurrence Count",
+            "type": "integer"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "external_id",
+          "external_display_name",
+          "occurrence_count",
+          "last_seen_at"
+        ],
+        "title": "UnresolvedIdentityOut",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Internal player analytics for a baseball training facility. All athlete access is authorized server-side and scoped to one organization.",
+    "title": "Baseball Analytics API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/dashboard/today": {
+      "get": {
+        "operationId": "today_api_v1_dashboard_today_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodaySnapshotOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Today",
+        "tags": [
+          "dashboard"
+        ]
+      }
+    },
+    "/api/v1/identity/unresolved": {
+      "get": {
+        "description": "Vendor athletes awaiting a human decision.",
+        "operationId": "list_unresolved_api_v1_identity_unresolved_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UnresolvedIdentityOut"
+                  },
+                  "title": "Response List Unresolved Api V1 Identity Unresolved Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Unresolved",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/v1/identity/unresolved/{item_id}/resolve": {
+      "post": {
+        "description": "Map a vendor athlete to one of our players, and recover their held data.\n\nAdmin-only and audited: this decision determines whose data is whose, and it\nis the one place a mistake would attribute one athlete's numbers to another.\n\nEvents held back for this athlete are recovered by **reprocessing** the\naffected imports from their archived source bytes -- never by back-filling\nrows by hand. The recovered data therefore goes through exactly the same\nvalidated pipeline as a first ingest, and stays idempotent.",
+        "operationId": "resolve_identity_api_v1_identity_unresolved__item_id__resolve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveIdentityIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveIdentityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve Identity",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/v1/imports": {
+      "get": {
+        "operationId": "list_imports_api_v1_imports_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ImportOut"
+                  },
+                  "title": "Response List Imports Api V1 Imports Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Imports",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/v1/imports/trackman/csv": {
+      "post": {
+        "description": "Ingest a TrackMan CSV export.\n\nRe-uploading the same file is safe and explicitly reported as a duplicate\nrather than silently creating a second copy of the session.",
+        "operationId": "upload_trackman_csv_api_v1_imports_trackman_csv_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "force",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Force",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_trackman_csv_api_v1_imports_trackman_csv_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResultOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Trackman Csv",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/v1/imports/{import_id}": {
+      "get": {
+        "description": "One import with its rejected rows, so nothing is silently discarded.",
+        "operationId": "get_import_api_v1_imports__import_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "import_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Import Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Import",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/v1/imports/{import_id}/reprocess": {
+      "post": {
+        "description": "Re-run a stored import from its archived source bytes.\n\nUsed after mapping a previously-unknown athlete, and after a parser or\nmetric change. Audited, because it rewrites athlete-facing numbers.",
+        "operationId": "reprocess_import_api_v1_imports__import_id__reprocess_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "import_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Import Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResultOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reprocess Import",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/v1/integrations/status": {
+      "get": {
+        "description": "Operational health. Broken automation is shown, never hidden.",
+        "operationId": "integration_status_api_v1_integrations_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationHealthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Integration Status",
+        "tags": [
+          "dashboard"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "get_me_api_v1_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUser"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Me",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/overview": {
+      "get": {
+        "operationId": "my_overview_api_v1_me_overview_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TimeRange",
+              "default": "30d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerOverviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Overview",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/prs": {
+      "get": {
+        "operationId": "my_records_api_v1_me_prs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PersonalRecordOut"
+                  },
+                  "title": "Response My Records Api V1 Me Prs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Records",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/sessions": {
+      "get": {
+        "operationId": "my_sessions_api_v1_me_sessions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SessionOut"
+                  },
+                  "title": "Response My Sessions Api V1 Me Sessions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Sessions",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/metrics": {
+      "get": {
+        "description": "The organization's metric catalog.\n\nThe dashboard reads this rather than hardcoding metric names, so changing\nthe metric set is a data change, not a frontend deployment.",
+        "operationId": "list_metrics_api_v1_metrics_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "enabled_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Enabled Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MetricDefinitionOut"
+                  },
+                  "title": "Response List Metrics Api V1 Metrics Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Metrics",
+        "tags": [
+          "metrics"
+        ]
+      }
+    },
+    "/api/v1/players": {
+      "get": {
+        "description": "Search the roster. Staff only -- a player has no roster.",
+        "operationId": "list_players_api_v1_players_get",
+        "parameters": [
+          {
+            "description": "name search: first, last or preferred",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "name search: first, last or preferred",
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlayerSummary"
+                  },
+                  "title": "Response List Players Api V1 Players Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Players",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}": {
+      "get": {
+        "operationId": "get_player_api_v1_players__player_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Player",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}/metrics/{metric_key}/series": {
+      "get": {
+        "description": "Session-by-session progression for one metric.",
+        "operationId": "get_metric_series_api_v1_players__player_id__metrics__metric_key__series_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "metric_key",
+            "required": true,
+            "schema": {
+              "title": "Metric Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TimeRange",
+              "default": "90d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricSeriesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Metric Series",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}/overview": {
+      "get": {
+        "description": "Headline metrics, their movement over the window, and current records.",
+        "operationId": "get_overview_api_v1_players__player_id__overview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TimeRange",
+              "default": "30d"
+            }
+          },
+          {
+            "in": "query",
+            "name": "headline_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Headline Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerOverviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Overview",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}/prs": {
+      "get": {
+        "operationId": "get_personal_records_api_v1_players__player_id__prs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PersonalRecordOut"
+                  },
+                  "title": "Response Get Personal Records Api V1 Players  Player Id  Prs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Personal Records",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}/prs/{metric_key}/history": {
+      "get": {
+        "description": "The full progression -- when each record was set, and by how much.",
+        "operationId": "get_record_history_api_v1_players__player_id__prs__metric_key__history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "metric_key",
+            "required": true,
+            "schema": {
+              "title": "Metric Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PersonalRecordEventOut"
+                  },
+                  "title": "Response Get Record History Api V1 Players  Player Id  Prs  Metric Key  History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Record History",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}/sessions": {
+      "get": {
+        "operationId": "get_sessions_api_v1_players__player_id__sessions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SessionOut"
+                  },
+                  "title": "Response Get Sessions Api V1 Players  Player Id  Sessions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Sessions",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/v1/prs/recent": {
+      "get": {
+        "description": "Newest records across the organization -- the feed a coach scans first.",
+        "operationId": "recent_records_api_v1_prs_recent_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 14,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PersonalRecordEventOut"
+                  },
+                  "title": "Response Recent Records Api V1 Prs Recent Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recent Records",
+        "tags": [
+          "dashboard"
+        ]
+      }
+    },
+    "/api/v1/sessions": {
+      "get": {
+        "operationId": "list_sessions_api_v1_sessions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SessionOut"
+                  },
+                  "title": "Response List Sessions Api V1 Sessions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Sessions",
+        "tags": [
+          "dashboard"
+        ]
+      }
+    },
+    "/api/v1/sync/futures/pending": {
+      "get": {
+        "operationId": "pending_futures_updates_api_v1_sync_futures_pending_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SyncJobOut"
+                  },
+                  "title": "Response Pending Futures Updates Api V1 Sync Futures Pending Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pending Futures Updates",
+        "tags": [
+          "sync"
+        ]
+      }
+    },
+    "/api/v1/sync/futures/{job_id}/mark-updated": {
+      "post": {
+        "description": "Confirm that a coach entered the value into Futures by hand.\n\nAudited: this is the only evidence we will have that the external system\nwas actually updated.",
+        "operationId": "mark_updated_api_v1_sync_futures__job_id__mark_updated_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncJobOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Updated",
+        "tags": [
+          "sync"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Liveness plus a real database round-trip.\n\nCloud Run will route traffic to an instance that answers here, so a\nhealthy reply that cannot reach Postgres would be worse than useless.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  }
+}
