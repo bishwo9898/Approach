@@ -1,0 +1,2 @@
+* text=auto eol=lf
+samples/trackman/*.csv text eol=lf

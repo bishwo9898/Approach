@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# Environment / secrets -- never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+service-account*.json
+
+# Local object store (raw import payloads)
+.localstore/
+var/
+
+# OS
+.DS_Store

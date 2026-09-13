@@ -1,0 +1,12 @@
+{
+  "name": "baseball-analytics",
+  "private": true,
+  "packageManager": "pnpm@10.3.0",
+  "scripts": {
+    "web:dev": "pnpm --filter @bsa/web dev",
+    "web:build": "pnpm --filter @bsa/web build",
+    "web:lint": "pnpm --filter @bsa/web lint",
+    "web:typecheck": "pnpm --filter @bsa/web typecheck",
+    "web:test": "pnpm --filter @bsa/web test"
+  }
+}
