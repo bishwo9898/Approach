@@ -1,0 +1,80 @@
+[project]
+name = "bsa-api"
+version = "0.1.0"
+description = "Baseball player analytics platform -- API and ingestion pipeline"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14",
+    "psycopg[binary]>=3.2",
+    "pandas>=2.2",
+    "httpx>=0.27",
+    "tenacity>=9.0",
+    "python-multipart>=0.0.12",
+    "structlog>=24.4",
+    "pyjwt[crypto]>=2.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "pandas-stubs>=2.2",
+    "types-python-dateutil",
+]
+
+[project.scripts]
+bsa-seed = "bsa.scripts.seed:main"
+bsa-ingest = "bsa.scripts.ingest:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bsa"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "C4", "SIM", "RUF", "ASYNC", "S"]
+ignore = [
+    "B008",   # FastAPI Depends() in defaults is the documented idiom
+    "RUF012", # ClassVar annotations not required on declarative models
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]          # assert is the point of a test
+"src/bsa/db/models/*" = ["N815"]
+"alembic/**" = ["E501", "N999"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+packages = ["bsa"]
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+disallow_untyped_decorators = false
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+asyncio_mode = "auto"
+markers = [
+    "integration: requires a live PostgreSQL database (BSA_TEST_DATABASE_URL)",
+]
+filterwarnings = ["error::DeprecationWarning:bsa.*"]
