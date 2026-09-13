@@ -163,6 +163,7 @@ Extension points exist. A reliable data foundation comes first.
 
 | | |
 |---|---|
+| [GOING_LIVE.md](docs/GOING_LIVE.md) | **Start here** — the path from synthetic data to real athletes |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layering, idempotency, reconciliation, why the PR engine is derived |
 | [DATA_MODEL.md](docs/DATA_MODEL.md) | All 17 tables, constraints, and what they answer |
 | [METRICS.md](docs/METRICS.md) | Metric configuration, the starter set, PR rules |
