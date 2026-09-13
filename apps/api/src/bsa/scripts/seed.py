@@ -198,14 +198,22 @@ def ensure_futures_mappings(
 
 
 def _training_days(today: date, weeks: int) -> list[date]:
-    """Tuesdays, Thursdays and Saturdays -- a plausible training cadence."""
+    """Tuesdays, Thursdays and Saturdays -- a plausible training cadence.
+
+    The anchor date is always included, even when it is not a training day.
+    Otherwise a seed run on a Sunday produces a dashboard whose headline
+    figures are all zero, which is correct but a poor first impression and
+    easily mistaken for something being broken.
+    """
     days: list[date] = []
-    start = today - timedelta(weeks=weeks)
-    cursor = start
+    cursor = today - timedelta(weeks=weeks)
     while cursor <= today:
         if cursor.weekday() in (1, 3, 5):
             days.append(cursor)
         cursor += timedelta(days=1)
+
+    if today not in days:
+        days.append(today)
     return days
 
 
