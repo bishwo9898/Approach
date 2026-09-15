@@ -15,7 +15,7 @@ source; The Futures App is a destination. Both sit behind adapters.
 | | |
 |---|---|
 | TrackMan CSV ingestion | Working, idempotent, against a **synthetic** schema |
-| Metrics engine | Configurable definitions, 9 starter metrics |
+| Metrics engine | Configurable definitions, 11 starter metrics |
 | PR engine | Derived progression, handles verified corrections |
 | Preliminary → verified reconciliation | Working |
 | Coach dashboard | Today, PR feed, search, player page, data health |
@@ -23,7 +23,7 @@ source; The Futures App is a destination. Both sit behind adapters.
 | Identity resolution | Map an unknown athlete; their held data is recovered automatically |
 | Futures sync | Manual worklist (no supported API confirmed) |
 | Auth | Dev provider; Clerk interface ready, refused in production |
-| Tests | 102 backend, 21 frontend, 7 end-to-end |
+| Tests | 109 backend, 22 frontend, 7 end-to-end |
 
 ## Quick start
 

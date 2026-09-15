@@ -92,6 +92,8 @@ def metric_summary(summary: MetricSummary) -> schemas.MetricSummaryOut:
             percent_change=comparison.percent_change,
             current_sample=comparison.current_sample,
             previous_sample=comparison.previous_sample,
+            current_source_status=comparison.current_source_status,
+            previous_source_status=comparison.previous_source_status,
         ),
         record=(personal_record(summary.record, summary.definition) if summary.record else None),
     )

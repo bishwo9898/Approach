@@ -42,7 +42,7 @@ only run on synthetic data.
 
 These need a coach, not a developer, and can happen in parallel with Phase A.
 
-- [ ] **Confirm the metric set.** The nine starter metrics are a scaffold, not a
+- [ ] **Confirm the metric set.** The eleven starter metrics are a scaffold, not a
       recommendation. See `docs/METRICS.md`. Changing them is a data change.
 - [ ] **Confirm minimum sample sizes.** Currently 3 tracked fastballs for a max,
       5 for an average, 10 pitches for a rate. Is a 3-pitch sample enough to

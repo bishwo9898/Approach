@@ -101,6 +101,9 @@ class MetricComparison(ApiModel):
     percent_change: float | None
     current_sample: int
     previous_sample: int
+    #: A window is preliminary when any contributing session is preliminary.
+    current_source_status: SourceStatus | None = None
+    previous_source_status: SourceStatus | None = None
 
 
 class PersonalRecordOut(ApiModel):

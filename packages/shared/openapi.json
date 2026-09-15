@@ -561,6 +561,16 @@
             "title": "Current Sample",
             "type": "integer"
           },
+          "current_source_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "delta": {
             "anyOf": [
               {
@@ -597,6 +607,16 @@
           "previous_sample": {
             "title": "Previous Sample",
             "type": "integer"
+          },
+          "previous_source_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [

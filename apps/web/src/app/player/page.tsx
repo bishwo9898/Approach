@@ -100,18 +100,28 @@ export default function PlayerDashboard() {
         </Card>
       ) : null}
 
-      {overview.data.metrics.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {overview.data.metrics.map((summary) => (
-            <MetricCard key={summary.definition.key} summary={summary} range={range} />
-          ))}
+      <section className="space-y-3" aria-labelledby="performance-snapshot">
+        <div>
+          <h2 id="performance-snapshot" className="text-lg font-semibold tracking-tight">
+            Performance Snapshot
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Your high, average, and low values for the selected period.
+          </p>
         </div>
-      ) : (
-        <EmptyState
-          title="No metrics yet"
-          description="Your numbers appear here once a tracked session is imported."
-        />
-      )}
+        {overview.data.metrics.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {overview.data.metrics.map((summary) => (
+              <MetricCard key={summary.definition.key} summary={summary} range={range} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="No metrics yet"
+            description="Your numbers appear here once a tracked session is imported."
+          />
+        )}
+      </section>
 
       <Card>
         <CardHeader>

@@ -42,6 +42,9 @@ test.describe("coach workflow", () => {
 
     await expect(page).toHaveURL(/\/coach\/players\/[0-9a-f-]{36}$/);
     await expect(page.getByRole("heading", { name: "Ryan Jones" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Performance Snapshot" }),
+    ).toBeVisible();
 
     // Every measurement carries its unit.
     const headline = page.getByText(/\d+\.\d+ mph/).first();
@@ -96,6 +99,9 @@ test.describe("player access", () => {
 
     await expect(page).toHaveURL(/\/player$/);
     await expect(page.getByRole("heading", { name: /Welcome, Jake/ })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Performance Snapshot" }),
+    ).toBeVisible();
     await expect(page.getByText("Your Personal Records")).toBeVisible();
   });
 

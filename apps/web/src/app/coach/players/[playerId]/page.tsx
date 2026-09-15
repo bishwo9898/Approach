@@ -148,22 +148,35 @@ export default function CoachPlayerPage() {
 
       {tab === "overview" ? (
         <div className="space-y-6">
-          {overview.data.metrics.length === 0 ? (
-            <EmptyState
-              title="No tracked metrics for this athlete"
-              description="Nothing has been imported for them yet, or their sessions did not meet any metric's minimum sample size."
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {overview.data.metrics.map((summary) => (
-                <MetricCard
-                  key={summary.definition.key}
-                  summary={summary}
-                  range={range}
-                />
-              ))}
+          <section className="space-y-3" aria-labelledby="performance-snapshot">
+            <div>
+              <h2
+                id="performance-snapshot"
+                className="text-lg font-semibold tracking-tight"
+              >
+                Performance Snapshot
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                High, average, and low values for the selected period.
+              </p>
             </div>
-          )}
+            {overview.data.metrics.length === 0 ? (
+              <EmptyState
+                title="No tracked metrics for this athlete"
+                description="Nothing has been imported for them yet, or their sessions did not meet any metric's minimum sample size."
+              />
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {overview.data.metrics.map((summary) => (
+                  <MetricCard
+                    key={summary.definition.key}
+                    summary={summary}
+                    range={range}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
 
           <Card>
             <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">

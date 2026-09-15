@@ -77,6 +77,7 @@ is expected to change them.
 |---|---|---|---|---|
 | `pitch.fastball.max_velocity` | MAX `velocity_mph`, fastballs | mph | ↑ | 3 |
 | `pitch.fastball.avg_velocity` | AVG `velocity_mph`, fastballs | mph | ↑ | 5 |
+| `pitch.fastball.min_velocity` | MIN `velocity_mph`, fastballs | mph | — | 3 |
 | `pitch.fastball.avg_spin_rate` | AVG `spin_rate_rpm`, fastballs | rpm | — | 5 |
 | `pitch.strike_percentage` | RATE of strikes | % | ↑ | 10 |
 | `pitch.count` | COUNT | count | — | 1 |
@@ -87,6 +88,7 @@ is expected to change them.
 |---|---|---|---|---|
 | `hit.max_exit_velocity` | MAX `exit_velocity_mph` | mph | ↑ | 3 |
 | `hit.avg_exit_velocity` | AVG `exit_velocity_mph` | mph | ↑ | 5 |
+| `hit.min_exit_velocity` | MIN `exit_velocity_mph` | mph | — | 3 |
 | `hit.max_distance` | MAX `distance_ft` | ft | ↑ | 3 |
 | `hit.tracked_batted_balls` | COUNT | count | — | 1 |
 
@@ -100,6 +102,10 @@ charted; it just is not an achievement.
 **Pitch count produces no record.** Throwing more pitches than ever before is
 volume, not performance — and turning it into a PR would reward exactly the
 wrong behaviour in a facility working with minors.
+
+**Minimum velocity metrics produce no record.** A low value is useful context
+for understanding the athlete's range in a selected period, but the application
+does not label it as good or bad and never turns “lowest” into an achievement.
 
 **Strike percentage excludes balls in play.** A ball put in play is neither a
 strike nor a ball for this purpose. Counting it as a miss would understate every

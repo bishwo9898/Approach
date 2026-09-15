@@ -34,7 +34,7 @@ from bsa.domain.analytics import (
     preceding_window,
     window_for,
 )
-from bsa.domain.enums import Aggregation
+from bsa.domain.enums import Aggregation, SourceStatus
 
 
 @dataclass(slots=True)
@@ -55,24 +55,40 @@ class PlayerOverview:
     metrics: list[MetricSummary] = field(default_factory=list)
 
 
-def _aggregate(values: list[float], aggregation: Aggregation) -> float | None:
+def _aggregate(values: list[tuple[float, int]], aggregation: Aggregation) -> float | None:
     """Roll session values up to a window using the metric's own aggregation.
 
     A window maximum is the max of its sessions; a window average is the mean of
-    its session values. Using the metric's declared aggregation keeps the
+    all qualifying events represented by its sessions. Session averages and
+    rates must be weighted by sample size: a bullpen with 40 pitches is more
+    evidence than one with 5. Using the metric's declared aggregation keeps the
     30-day number the same *kind* of number as the session number.
     """
     if not values:
         return None
+    measurements = [value for value, _sample_size in values]
     match aggregation:
         case Aggregation.MAX:
-            return max(values)
+            return max(measurements)
         case Aggregation.MIN:
-            return min(values)
+            return min(measurements)
         case Aggregation.COUNT | Aggregation.SUM:
-            return sum(values)
-        case _:
-            return sum(values) / len(values)
+            return sum(measurements)
+        case Aggregation.AVG | Aggregation.RATE:
+            weighted = [(value, sample_size) for value, sample_size in values if sample_size > 0]
+            total_sample = sum(sample_size for _value, sample_size in weighted)
+            if total_sample == 0:
+                return None
+            return sum(value * sample_size for value, sample_size in weighted) / total_sample
+
+
+def _window_source_status(observations: list[MetricObservation]) -> SourceStatus | None:
+    """Conservatively label a rollup preliminary if any input is preliminary."""
+    if not observations:
+        return None
+    if any(o.source_status is SourceStatus.PRELIMINARY for o in observations):
+        return SourceStatus.PRELIMINARY
+    return SourceStatus.VERIFIED
 
 
 def _window_value(
@@ -80,12 +96,16 @@ def _window_value(
     player_id: uuid.UUID,
     definition: MetricDefinition,
     window: DateWindow,
-) -> tuple[float | None, int]:
+) -> tuple[float | None, int, SourceStatus | None]:
     observations = metrics_repo.observations_in_window(
         db, player_id, definition.id, window.start, window.end
     )
-    value = _aggregate([o.value for o in observations], definition.aggregation)
-    return value, sum(o.sample_size for o in observations)
+    value = _aggregate([(o.value, o.sample_size) for o in observations], definition.aggregation)
+    return (
+        value,
+        sum(o.sample_size for o in observations),
+        _window_source_status(observations),
+    )
 
 
 def player_overview(
@@ -111,8 +131,8 @@ def player_overview(
 
     summaries: list[MetricSummary] = []
     for definition in definitions:
-        current, current_sample = _window_value(db, player.id, definition, window)
-        previous, previous_sample = _window_value(db, player.id, definition, prior)
+        current, current_sample, current_status = _window_value(db, player.id, definition, window)
+        previous, previous_sample, previous_status = _window_value(db, player.id, definition, prior)
         latest = latest_by_metric.get(definition.id)
         record = records_repo.get_current(db, player.id, definition.id)
 
@@ -127,7 +147,14 @@ def player_overview(
             MetricSummary(
                 definition=definition,
                 latest=latest,
-                comparison=Comparison(current, previous, current_sample, previous_sample),
+                comparison=Comparison(
+                    current,
+                    previous,
+                    current_sample,
+                    previous_sample,
+                    current_status.value if current_status else None,
+                    previous_status.value if previous_status else None,
+                ),
                 record=record,
             )
         )

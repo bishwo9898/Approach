@@ -98,6 +98,30 @@ STARTER_METRICS: list[MetricSeed] = [
         },
     ),
     MetricSeed(
+        key="pitch.fastball.min_velocity",
+        display_name="Fastball Minimum Velocity",
+        description=(
+            "Lowest credible fastball release velocity in the scope. This is context, "
+            "not a personal record or a judgment about performance."
+        ),
+        category=MetricCategory.PITCHING,
+        event_source=EventSource.PITCH,
+        aggregation=Aggregation.MIN,
+        unit=Unit.MPH,
+        record_direction=RecordDirection.NONE,
+        min_sample_size=3,
+        is_headline=True,
+        sort_order=25,
+        spec={
+            "field": "velocity_mph",
+            "filters": _FASTBALL_FILTER,
+            "context_dimensions": _FASTBALL_CONTEXT,
+            "min_value": 40.0,
+            "max_value": 105.0,
+            "round_to": 1,
+        },
+    ),
+    MetricSeed(
         key="pitch.fastball.avg_spin_rate",
         display_name="Fastball Average Spin Rate",
         description=(
@@ -189,6 +213,28 @@ STARTER_METRICS: list[MetricSeed] = [
         min_sample_size=5,
         is_headline=True,
         sort_order=70,
+        spec={
+            "field": "exit_velocity_mph",
+            "min_value": 30.0,
+            "max_value": 125.0,
+            "round_to": 1,
+        },
+    ),
+    MetricSeed(
+        key="hit.min_exit_velocity",
+        display_name="Minimum Exit Velocity",
+        description=(
+            "Lowest credible exit velocity in the scope. Shown as context only; "
+            "it does not create a personal record."
+        ),
+        category=MetricCategory.HITTING,
+        event_source=EventSource.HIT,
+        aggregation=Aggregation.MIN,
+        unit=Unit.MPH,
+        record_direction=RecordDirection.NONE,
+        min_sample_size=3,
+        is_headline=True,
+        sort_order=75,
         spec={
             "field": "exit_velocity_mph",
             "min_value": 30.0,

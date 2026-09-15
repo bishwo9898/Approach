@@ -711,6 +711,7 @@ export interface components {
       current: number | null;
       /** Current Sample */
       current_sample: number;
+      current_source_status?: components["schemas"]["SourceStatus"] | null;
       /** Delta */
       delta: number | null;
       /** Percent Change */
@@ -719,6 +720,7 @@ export interface components {
       previous: number | null;
       /** Previous Sample */
       previous_sample: number;
+      previous_source_status?: components["schemas"]["SourceStatus"] | null;
     };
     /** MetricDefinitionOut */
     MetricDefinitionOut: {

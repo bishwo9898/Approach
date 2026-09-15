@@ -312,7 +312,7 @@ message when unavailable rather than failing confusingly.
 
 ## Open assumptions to confirm with the facility
 
-1. **Metric set.** The nine starter metrics are a scaffold, not a
+1. **Metric set.** The eleven starter metrics are a scaffold, not a
    recommendation. Which does the coach actually want?
 2. **Minimum sample sizes.** 3 for a max, 5 for an average, 10 for a rate are
    judgement calls. A coach may consider 3 fastballs too thin for a record.

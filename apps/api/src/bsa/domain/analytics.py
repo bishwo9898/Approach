@@ -75,6 +75,8 @@ class Comparison:
     previous: float | None
     current_sample: int = 0
     previous_sample: int = 0
+    current_source_status: str | None = None
+    previous_source_status: str | None = None
 
     @property
     def delta(self) -> float | None:

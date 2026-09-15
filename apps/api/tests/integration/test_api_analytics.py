@@ -120,7 +120,10 @@ def test_window_comparison_uses_an_equal_length_prior_window(client, seeded) -> 
         "percent_change",
         "current_sample",
         "previous_sample",
+        "current_source_status",
+        "previous_source_status",
     }
+    assert window["current_source_status"] == "PRELIMINARY"
     if window["previous"] is not None:
         assert window["delta"] == pytest.approx(window["current"] - window["previous"], abs=1e-4)
 
@@ -208,6 +211,8 @@ def test_metric_catalog_is_served_as_data(client, seeded) -> None:  # type: igno
 
     keys = {m["key"] for m in body}
     assert "pitch.fastball.max_velocity" in keys
+    assert "pitch.fastball.min_velocity" in keys
+    assert "hit.min_exit_velocity" in keys
     assert all(m["unit"] for m in body)
     assert all(
         m["record_direction"] in ("HIGHER_IS_BETTER", "LOWER_IS_BETTER", "NONE") for m in body

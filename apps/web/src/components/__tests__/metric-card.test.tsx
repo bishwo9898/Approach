@@ -27,12 +27,14 @@ const summary = (overrides: Partial<MetricSummary> = {}): MetricSummary => ({
     observed_on: "2026-09-12",
   },
   window: {
-    current: 87.3,
-    previous: 84.9,
+    current: 88.4,
+    previous: 86.0,
     delta: 2.4,
-    percent_change: 2.83,
+    percent_change: 2.79,
     current_sample: 60,
     previous_sample: 55,
+    current_source_status: "PRELIMINARY",
+    previous_source_status: "VERIFIED",
   },
   // Standing record set on an earlier day, deliberately different from the
   // latest value so assertions below are unambiguous.
@@ -52,10 +54,19 @@ const summary = (overrides: Partial<MetricSummary> = {}): MetricSummary => ({
 });
 
 describe("MetricCard", () => {
-  it("shows the value with its unit", () => {
+  it("shows the selected period value with its unit", () => {
     render(<MetricCard summary={summary()} range="30d" />);
 
+    expect(screen.getByText("88.4 mph")).toBeInTheDocument();
+    expect(screen.getByText("30 Days")).toBeInTheDocument();
+  });
+
+  it("keeps the latest session value distinct from the period result", () => {
+    render(<MetricCard summary={summary()} range="30d" />);
+
+    expect(screen.getByText("Latest session")).toBeInTheDocument();
     expect(screen.getByText("87.3 mph")).toBeInTheDocument();
+    expect(screen.getByText("Sep 12, 2026")).toBeInTheDocument();
   });
 
   it("shows the standing record alongside the current value", () => {
@@ -67,7 +78,7 @@ describe("MetricCard", () => {
   it("always shows the sample size behind the number", () => {
     render(<MetricCard summary={summary()} range="30d" />);
 
-    expect(screen.getByText("n=22")).toBeInTheDocument();
+    expect(screen.getByText("n=60")).toBeInTheDocument();
   });
 
   it("labels preliminary data so it is not mistaken for confirmed", () => {
@@ -80,12 +91,15 @@ describe("MetricCard", () => {
     render(
       <MetricCard
         summary={summary({
-          latest: {
-            value: 87.3,
-            unit: "mph",
-            sample_size: 22,
-            source_status: "VERIFIED",
-            observed_on: "2026-09-12",
+          window: {
+            current: 88.4,
+            previous: 86.0,
+            delta: 2.4,
+            percent_change: 2.79,
+            current_sample: 60,
+            previous_sample: 55,
+            current_source_status: "VERIFIED",
+            previous_source_status: "VERIFIED",
           },
         })}
         range="30d"
@@ -112,6 +126,8 @@ describe("MetricCard", () => {
             percent_change: -3.78,
             current_sample: 20,
             previous_sample: 22,
+            current_source_status: "PRELIMINARY",
+            previous_source_status: "VERIFIED",
           },
         })}
         range="30d"
@@ -126,12 +142,15 @@ describe("MetricCard", () => {
     render(
       <MetricCard
         summary={summary({
-          latest: {
-            value: null,
-            unit: "mph",
-            sample_size: 0,
-            source_status: null,
-            observed_on: null,
+          window: {
+            current: null,
+            previous: null,
+            delta: null,
+            percent_change: null,
+            current_sample: 0,
+            previous_sample: 0,
+            current_source_status: null,
+            previous_source_status: null,
           },
           record: null,
         })}
@@ -141,6 +160,6 @@ describe("MetricCard", () => {
 
     expect(screen.getByText("—")).toBeInTheDocument();
     expect(screen.getByText("no samples")).toBeInTheDocument();
-    expect(screen.getByText("No record yet")).toBeInTheDocument();
+    expect(screen.getByText("Not tracked as a PR")).toBeInTheDocument();
   });
 });
