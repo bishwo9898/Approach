@@ -4,8 +4,8 @@ import { AppProviders } from "@/components/app-providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Baseball Analytics",
-  description: "Internal player analytics for the training facility.",
+  title: "Approach | Player Development",
+  description: "Clear, trusted performance insights for coaches and athletes.",
   robots: { index: false, follow: false },
 };
 

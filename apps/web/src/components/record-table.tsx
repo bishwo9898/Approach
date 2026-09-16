@@ -18,9 +18,9 @@ export function RecordTable({ records }: { records: PersonalRecord[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full min-w-[560px] text-sm">
         <thead>
-          <tr className="border-b border-border text-left text-xs text-muted-foreground">
+          <tr className="border-b border-border bg-muted/40 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
             <th className="py-2 pr-4 font-medium">Metric</th>
             <th className="py-2 pr-4 text-right font-medium">Record</th>
             <th className="py-2 pr-4 font-medium">Achieved</th>
@@ -29,7 +29,7 @@ export function RecordTable({ records }: { records: PersonalRecord[] }) {
         </thead>
         <tbody className="divide-y divide-border">
           {records.map((record) => (
-            <tr key={record.metric_key}>
+            <tr key={record.metric_key} className="transition-colors hover:bg-muted/30">
               <td className="py-2.5 pr-4 font-medium">{record.metric_display_name}</td>
               <td className="tabular py-2.5 pr-4 text-right font-semibold">
                 {formatMeasurement(record.value, record.unit, record.display_precision)}

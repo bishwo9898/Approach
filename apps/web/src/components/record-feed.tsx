@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SourceStatusBadge } from "@/components/source-status-badge";
 import { formatDate, formatDelta, formatMeasurement } from "@/lib/format";
@@ -42,10 +43,13 @@ export function RecordFeed({
         );
 
         return (
-          <li key={event.id} className="flex items-center gap-3 py-2.5 text-sm">
+          <li key={event.id} className="flex items-center gap-3 py-3.5 text-sm">
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-amber-100">
+              <Icon name="trophy" className="size-4" />
+            </span>
             <div className="min-w-0 flex-1">
               <div className="truncate">{name}</div>
-              <div className="text-xs text-muted-foreground">
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
                 {event.metric_display_name} · {formatDate(event.achieved_on)} · n=
                 {event.sample_size}
               </div>
@@ -60,7 +64,7 @@ export function RecordFeed({
                 <div className="text-xs text-muted-foreground">first</div>
               )}
             </div>
-            <div className="flex w-24 shrink-0 flex-col items-end gap-1">
+            <div className="hidden w-24 shrink-0 flex-col items-end gap-1 sm:flex">
               <Badge variant="record">NEW PR</Badge>
               <SourceStatusBadge status={event.source_status} />
             </div>

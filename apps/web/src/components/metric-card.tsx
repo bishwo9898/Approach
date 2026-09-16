@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { Icon } from "@/components/ui/icons";
 import { SourceStatusBadge } from "@/components/source-status-badge";
 import {
   changeTone,
@@ -41,13 +42,23 @@ export function MetricCard({
   const periodLabel = TIME_RANGE_LABELS[range] ?? range;
 
   return (
-    <Card>
+    <Card className="group overflow-hidden transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
       <CardContent className="space-y-4 p-5">
         <div>
-          <p className="text-xs font-medium text-muted-foreground">
-            {definition.display_name}
-          </p>
-          <p className="tabular mt-1 text-2xl font-semibold tracking-tight">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-medium text-muted-foreground">
+              {definition.display_name}
+            </p>
+            {record ? (
+              <span
+                title="Personal record available"
+                className="grid size-7 place-items-center rounded-lg bg-amber-50 text-amber-600"
+              >
+                <Icon name="trophy" className="size-3.5" />
+              </span>
+            ) : null}
+          </div>
+          <p className="tabular mt-2 text-[26px] font-semibold leading-none tracking-[-0.035em]">
             {formatMeasurement(window.current, definition.unit, precision)}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -62,9 +73,14 @@ export function MetricCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex min-h-5 items-center gap-2 text-xs">
           {delta ? (
-            <span className={cn("tabular font-medium", TONE_CLASS[tone])}>
+            <span
+              className={cn(
+                "tabular rounded-full bg-muted px-2 py-1 font-semibold",
+                TONE_CLASS[tone],
+              )}
+            >
               {delta} {definition.unit !== "count" ? definition.unit : ""}
             </span>
           ) : (
@@ -75,7 +91,7 @@ export function MetricCard({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 border-t border-border pt-3 text-xs">
+        <div className="grid grid-cols-2 gap-4 border-t border-border/80 pt-3 text-xs">
           <div>
             <p className="text-muted-foreground">Latest session</p>
             <p className="tabular mt-0.5 font-medium text-foreground">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { MetricCard } from "@/components/metric-card";
@@ -19,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Icon } from "@/components/ui/icons";
 import {
   usePlayerOverview,
   usePlayerRecords,
@@ -80,53 +82,96 @@ export default function CoachPlayerPage() {
   } = overview.data;
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{player.display_name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {[
-              player.position,
-              player.graduation_year ? `Class of ${player.graduation_year}` : null,
-              player.bats ? `B/T ${player.bats}/${player.throws ?? "—"}` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-        </div>
-        <TimeRangePicker value={range} onChange={setRange} />
-      </header>
-
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-6 p-5 text-sm">
+    <div className="space-y-8">
+      <section className="overflow-hidden rounded-[1.2rem] border border-border/80 bg-card shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
+        <div className="h-1.5 bg-gradient-to-r from-blue-600 via-blue-400 to-cyan-300" />
+        <div className="flex flex-wrap items-end justify-between gap-6 p-6 sm:p-7">
           <div>
-            <p className="text-xs text-muted-foreground">Last session</p>
-            <p className="font-medium">
-              {lastSession ? formatDate(lastSession.session_date) : "No sessions yet"}
-            </p>
+            <Link
+              href="/coach/players"
+              className="mb-4 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground hover:text-foreground"
+            >
+              <Icon name="arrow" className="size-3 rotate-180" /> Back to roster
+            </Link>
+            <div className="flex items-center gap-4">
+              <span className="grid size-14 place-items-center rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-md">
+                {player.display_name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .slice(0, 2)
+                  .join("")}
+              </span>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-foreground">
+                  Athlete profile
+                </p>
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-[28px]">
+                  {player.display_name}
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {[
+                    player.position,
+                    player.graduation_year ? `Class of ${player.graduation_year}` : null,
+                    player.bats ? `B/T ${player.bats}/${player.throws ?? "—"}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+            </div>
+          </div>
+          <TimeRangePicker value={range} onChange={setRange} />
+        </div>
+        <div className="grid border-t border-border/80 bg-muted/25 sm:grid-cols-4 sm:divide-x sm:divide-border/80">
+          <div>
+            <div className="px-5 py-4">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Last session
+              </p>
+              <p className="mt-1 text-sm font-semibold">
+                {lastSession ? formatDate(lastSession.session_date) : "No sessions yet"}
+              </p>
+            </div>
           </div>
           {lastSession ? (
             <>
               <div>
-                <p className="text-xs text-muted-foreground">Tracked events</p>
-                <p className="tabular font-medium">
-                  {lastSession.pitch_count + lastSession.hit_count}
-                </p>
+                <div className="px-5 py-4">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Tracked events
+                  </p>
+                  <p className="tabular mt-1 text-sm font-semibold">
+                    {lastSession.pitch_count + lastSession.hit_count}
+                  </p>
+                </div>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Data status</p>
-                <SourceStatusBadge status={lastSession.source_status} />
+                <div className="px-5 py-4">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Data status
+                  </p>
+                  <div className="mt-1">
+                    <SourceStatusBadge status={lastSession.source_status} />
+                  </div>
+                </div>
               </div>
             </>
           ) : null}
           <div>
-            <p className="text-xs text-muted-foreground">Sessions in range</p>
-            <p className="tabular font-medium">{sessionsInWindow}</p>
+            <div className="px-5 py-4">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Sessions in range
+              </p>
+              <p className="tabular mt-1 text-sm font-semibold">{sessionsInWindow}</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <nav className="flex gap-1 border-b border-border" role="tablist">
+      <nav
+        className="flex w-fit gap-1 rounded-xl border border-border bg-card p-1 shadow-sm"
+        role="tablist"
+      >
         {(["overview", "prs", "sessions"] as const).map((value) => (
           <button
             key={value}
@@ -135,8 +180,8 @@ export default function CoachPlayerPage() {
             onClick={() => setTab(value)}
             className={
               tab === value
-                ? "-mb-px border-b-2 border-foreground px-3 py-2 text-sm font-medium"
-                : "-mb-px border-b-2 border-transparent px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+                ? "rounded-lg bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground shadow-sm"
+                : "rounded-lg px-3.5 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
             }
           >
             {value === "prs"
@@ -154,7 +199,7 @@ export default function CoachPlayerPage() {
                 id="performance-snapshot"
                 className="text-lg font-semibold tracking-tight"
               >
-                Performance Snapshot
+                Performance snapshot
               </h2>
               <p className="text-sm text-muted-foreground">
                 High, average, and low values for the selected period.
@@ -221,7 +266,7 @@ export default function CoachPlayerPage() {
       {tab === "prs" ? (
         <Card>
           <CardHeader>
-            <CardTitle>Personal Records</CardTitle>
+            <CardTitle>Personal records</CardTitle>
             <CardDescription>All time, across every tracked metric</CardDescription>
           </CardHeader>
           <CardContent>
@@ -237,7 +282,7 @@ export default function CoachPlayerPage() {
       {tab === "sessions" ? (
         <Card>
           <CardHeader>
-            <CardTitle>Session History</CardTitle>
+            <CardTitle>Session history</CardTitle>
             <CardDescription>Most recent first</CardDescription>
           </CardHeader>
           <CardContent>

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/ui/empty-state";
+import { Icon } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePlayerSearch } from "@/hooks/use-api";
@@ -28,13 +29,20 @@ export function PlayerSearch({ autoFocus = false }: { autoFocus?: boolean }) {
 
   return (
     <div className="space-y-3">
-      <Input
-        value={term}
-        onChange={(event) => setTerm(event.target.value)}
-        placeholder="Search athletes by name…"
-        aria-label="Search athletes"
-        autoFocus={autoFocus}
-      />
+      <div className="relative">
+        <Icon
+          name="search"
+          className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          value={term}
+          onChange={(event) => setTerm(event.target.value)}
+          placeholder="Search athletes by name…"
+          aria-label="Search athletes"
+          autoFocus={autoFocus}
+          className="h-11 pl-10"
+        />
+      </div>
 
       {isLoading ? (
         <div className="space-y-2">
@@ -51,23 +59,38 @@ export function PlayerSearch({ autoFocus = false }: { autoFocus?: boolean }) {
           }
         />
       ) : (
-        <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
           {data.map((player) => (
             <li key={player.id}>
               <button
                 type="button"
                 onClick={() => router.push(`/coach/players/${player.id}`)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-accent"
+                className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/60"
               >
-                <span className="text-sm font-medium">{player.display_name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {[
-                    player.position,
-                    player.graduation_year && `Class of ${player.graduation_year}`,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-muted text-xs font-semibold text-muted-foreground">
+                  {player.display_name
+                    .split(" ")
+                    .map((part) => part[0])
+                    .slice(0, 2)
+                    .join("")}
                 </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">
+                    {player.display_name}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {[
+                      player.position,
+                      player.graduation_year && `Class of ${player.graduation_year}`,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Roster athlete"}
+                  </span>
+                </span>
+                <Icon
+                  name="arrow"
+                  className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground"
+                />
               </button>
             </li>
           ))}

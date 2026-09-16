@@ -14,6 +14,8 @@ import { IdentityResolver } from "@/components/identity-resolver";
 import { ImportTable } from "@/components/import-table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatTile } from "@/components/stat-tile";
+import { PageHeader } from "@/components/page-header";
+import { Icon } from "@/components/ui/icons";
 import {
   useCurrentUser,
   useImports,
@@ -42,13 +44,12 @@ export default function OperationsPage() {
   const isAdmin = user.data?.role === "ADMIN";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Data Health</h1>
-        <p className="text-sm text-muted-foreground">
-          TrackMan ingestion, athlete mapping, and Futures updates.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Operations"
+        title="Data health"
+        description="Monitor TrackMan ingestion, resolve athlete identities, and keep downstream systems current."
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {health.isLoading || !health.data ? (
@@ -61,25 +62,40 @@ export default function OperationsPage() {
               label="Last Import"
               value={formatRelative(health.data.last_successful_import_at)}
               hint={health.data.last_import_status ?? "no imports yet"}
+              icon="database"
+              tone="blue"
             />
             <StatTile
               label="Awaiting Verification"
               value={health.data.sessions_awaiting_verification}
               hint="TrackMan has not republished these as verified"
+              icon="sessions"
+              tone="violet"
             />
             <StatTile
               label="Unresolved Athletes"
               value={health.data.unresolved_players}
               hint="data held until mapped"
+              icon="players"
+              tone="amber"
             />
-            <StatTile label="Failed Imports (7d)" value={health.data.failed_imports_7d} />
+            <StatTile
+              label="Failed Imports (7d)"
+              value={health.data.failed_imports_7d}
+              icon="activity"
+              tone="amber"
+              hint="Review any rejected rows below"
+            />
           </>
         )}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Import a TrackMan Export</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Icon name="database" className="size-4 text-accent-foreground" /> Import a
+            TrackMan export
+          </CardTitle>
           <CardDescription>
             Re-uploading a file you have already imported is safe — it is detected and
             does nothing.
@@ -92,7 +108,10 @@ export default function OperationsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Athlete Mapping Required</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Icon name="players" className="size-4 text-warning" /> Athlete mapping
+            required
+          </CardTitle>
           <CardDescription>
             TrackMan reported these athletes with no mapping to one of ours. Their data is
             held, not guessed at. Mapping one recovers their held sessions automatically.
@@ -109,7 +128,7 @@ export default function OperationsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Import History</CardTitle>
+          <CardTitle>Import history</CardTitle>
           <CardDescription>
             Rejected rows are kept and shown — nothing is silently discarded.
           </CardDescription>
@@ -125,7 +144,7 @@ export default function OperationsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Futures Updates Pending</CardTitle>
+          <CardTitle>Futures updates pending</CardTitle>
           <CardDescription>
             No automated Futures integration is available yet. These are the exact values
             to enter; mark each one once you have.

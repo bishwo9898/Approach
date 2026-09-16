@@ -4,9 +4,9 @@ import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 
 const NAV = [
-  { href: "/coach", label: "Dashboard" },
-  { href: "/coach/players", label: "Players" },
-  { href: "/coach/operations", label: "Data Health" },
+  { href: "/coach", label: "Dashboard", icon: "home" as const },
+  { href: "/coach/players", label: "Athletes", icon: "players" as const },
+  { href: "/coach/operations", label: "Data Health", icon: "database" as const },
 ];
 
 export default function CoachLayout({ children }: { children: React.ReactNode }) {

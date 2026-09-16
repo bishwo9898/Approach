@@ -4,23 +4,23 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --background: 216 33% 97%;
+    --foreground: 222 47% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --primary: 222 47% 18%;
+    --card-foreground: 222 47% 10%;
+    --muted: 214 32% 95%;
+    --muted-foreground: 215 16% 43%;
+    --primary: 222 63% 18%;
     --primary-foreground: 210 40% 98%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 47% 18%;
-    --positive: 142 71% 34%;
+    --accent: 214 95% 94%;
+    --accent-foreground: 221 83% 40%;
+    --border: 214 28% 89%;
+    --input: 214 28% 86%;
+    --ring: 217 91% 60%;
+    --positive: 155 68% 31%;
     --negative: 0 72% 45%;
-    --warning: 38 92% 40%;
-    --radius: 0.6rem;
+    --warning: 35 92% 39%;
+    --radius: 0.9rem;
   }
 
   * {
@@ -30,10 +30,29 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04";
+    background-image:
+      radial-gradient(circle at 78% -10%, hsl(214 100% 96%) 0, transparent 32rem),
+      linear-gradient(to bottom, hsl(216 33% 98%), hsl(var(--background)) 22rem);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: hsl(217 91% 60% / 0.2);
+  }
+
+  :focus-visible {
+    scroll-margin: 1rem;
   }
 
   /* Measurements line up in columns. */
   .tabular {
     font-variant-numeric: tabular-nums;
+  }
+
+  .surface-grid {
+    background-image:
+      linear-gradient(hsl(0 0% 100% / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 }

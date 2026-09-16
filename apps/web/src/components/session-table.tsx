@@ -17,9 +17,9 @@ export function SessionTable({ sessions }: { sessions: TrainingSession[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full min-w-[580px] text-sm">
         <thead>
-          <tr className="border-b border-border text-left text-xs text-muted-foreground">
+          <tr className="border-b border-border bg-muted/40 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
             <th className="py-2 pr-4 font-medium">Date</th>
             <th className="py-2 pr-4 font-medium">Type</th>
             <th className="py-2 pr-4 text-right font-medium">Pitches</th>
@@ -29,7 +29,7 @@ export function SessionTable({ sessions }: { sessions: TrainingSession[] }) {
         </thead>
         <tbody className="divide-y divide-border">
           {sessions.map((session) => (
-            <tr key={session.id}>
+            <tr key={session.id} className="transition-colors hover:bg-muted/30">
               <td className="py-2.5 pr-4 font-medium">
                 {formatDate(session.session_date)}
               </td>
