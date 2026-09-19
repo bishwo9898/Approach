@@ -27,9 +27,9 @@ test.describe("coach workflow", () => {
     await signIn(page, /Chris Coach/);
 
     await expect(page).toHaveURL(/\/coach$/);
-    await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
-    await expect(page.getByText("Athletes Trained")).toBeVisible();
-    await expect(page.getByText("New PRs")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Training overview" })).toBeVisible();
+    await expect(page.getByText("Athletes trained")).toBeVisible();
+    await expect(page.getByText("New personal records")).toBeVisible();
   });
 
   test("searches an athlete, opens them, and reads their analytics", async ({ page }) => {
@@ -98,11 +98,11 @@ test.describe("player access", () => {
     await signIn(page, /Jake Williams/);
 
     await expect(page).toHaveURL(/\/player$/);
-    await expect(page.getByRole("heading", { name: /Welcome, Jake/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Welcome back, Jake/ })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Performance Snapshot" }),
     ).toBeVisible();
-    await expect(page.getByText("Your Personal Records")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Personal records" })).toBeVisible();
   });
 
   test("a player cannot reach another athlete by changing the URL", async ({
@@ -121,7 +121,7 @@ test.describe("player access", () => {
     const forbidden = await request.get(`${apiBase}/api/v1/players/${otherId}`, {
       headers: { Authorization: "Bearer dev|player" },
     });
-    expect(forbidden.status()).toBe(403);
+    expect(forbidden.status()).toBe(404);
 
     // And the page itself does not render their data.
     await signIn(page, /Jake Williams/);

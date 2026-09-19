@@ -127,7 +127,7 @@ def authorize_player(db: Session, principal: Principal, player_id: uuid.UUID) ->
         raise NotFoundError("player not found")
 
     if not principal.is_staff and principal.user.player_id != player.id:
-        raise AuthorizationError("you do not have access to this athlete")
+        raise NotFoundError("player not found")
 
     return player
 

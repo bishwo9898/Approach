@@ -143,7 +143,7 @@ def test_player_cannot_read_another_athlete_by_changing_the_url(client, roster) 
         f"/api/v1/players/{other.id}/metrics/pitch.fastball.max_velocity/series",
         f"/api/v1/players/{other.id}/prs/pitch.fastball.max_velocity/history",
     ):
-        assert client.get(path, headers=auth("dev|p1")).status_code == 403, path
+        assert client.get(path, headers=auth("dev|p1")).status_code == 404, path
 
 
 def test_player_cannot_list_the_roster_or_see_the_coach_dashboard(client, roster) -> None:  # type: ignore[no-untyped-def]

@@ -27,7 +27,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ---- runtime --------------------------------------------------------------
 FROM python:3.12-slim AS runtime
 
-RUN useradd --create-home --uid 10001 bsa
+RUN useradd --create-home --uid 10001 bsa && \
+    mkdir -p /data/objectstore && \
+    chown bsa:bsa /data/objectstore
 
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
