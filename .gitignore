@@ -27,6 +27,10 @@ test-results/
 *.key
 service-account*.json
 
+# Real TrackMan exports. Never committed -- they contain real athlete data.
+/imports/*
+!/imports/README.md
+
 # Local object store (raw import payloads)
 .localstore/
 var/

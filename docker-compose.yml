@@ -47,6 +47,10 @@ services:
       # Raw import archive survives container rebuilds. In production this is
       # GCS -- a local store is refused in production for exactly this reason.
       - bsa-objectstore:/data/objectstore
+      # Drop real TrackMan exports in ./imports to inspect or ingest them
+      # without copying anything into the container. Read-only: the pipeline
+      # archives its own copy, and the original must not be modified.
+      - ./imports:/data/imports:ro
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/health')\""]
       interval: 10s

@@ -23,53 +23,93 @@ source; The Futures App is a destination. Both sit behind adapters.
 | Identity resolution | Map an unknown athlete; their held data is recovered automatically |
 | Futures sync | Manual worklist (no supported API confirmed) |
 | Auth | Dev provider; Clerk interface ready, refused in production |
-| Tests | 109 backend, 22 frontend, 7 end-to-end |
+| Tests | 112 backend, 28 frontend, 7 end-to-end |
 
 ## Quick start
 
-### Everything in Docker (nothing else to install)
+**One command.** Everything runs in Docker — no Python, Node or database setup.
 
 ```bash
-cp .env.example .env
-docker compose up -d --build          # db + api + web
+docker compose up -d --build
+```
+
+```bash
 docker compose exec api python -m bsa.scripts.seed --reset
 ```
 
-Then open http://localhost:3000 and sign in as **Chris Coach**.
-The seed prints the development sign-in tokens.
+Open **http://localhost:3000** and sign in as **Chris Coach** (or **Dana Admin**
+for import and athlete-mapping tools). The seed prints every login.
 
-### Or run the apps natively (for development)
+To stop: `docker compose down`. To wipe the data too: `docker compose down -v`.
 
-Prerequisites: Docker, Python 3.12+, Node 20+, [`uv`](https://docs.astral.sh/uv/),
-`pnpm`.
+### Checking which stack you are talking to
 
-```bash
-cp .env.example .env
-docker compose up -d db               # just PostgreSQL, on :5433
+`http://localhost:8000/health` reports the database it is attached to:
+
+```json
+{ "status": "ok", "database": "ok", "database_target": "db:5432/bsa" }
 ```
 
-#### API
+`db:5432` is the Docker database. `localhost:5432` is a local one. This matters
+because **running Docker and a local API at the same time collides on port 8000**
+— your browser may reach one while your terminal reaches the other, each with
+different data. Run one or the other, not both.
+
+<details>
+<summary>Running natively instead (faster iteration for development)</summary>
+
+Prerequisites: Python 3.12+, Node 20+, [`uv`](https://docs.astral.sh/uv/), `pnpm`.
+
+```bash
+docker compose down            # stop the containers first -- see the note above
+cp .env.example .env
+docker compose up -d db        # just PostgreSQL, on :5433
+```
 
 ```bash
 cd apps/api
-uv venv --python 3.12
-uv pip install -e ".[dev]"
+uv venv --python 3.12 && uv pip install -e ".[dev]"
 .venv/bin/alembic upgrade head
 .venv/bin/python -m bsa.scripts.seed --reset
 .venv/bin/uvicorn bsa.api.app:app --reload --port 8000
 ```
 
-API docs: http://localhost:8000/docs
-
-#### Web
-
 ```bash
-pnpm install
-pnpm --filter @bsa/web dev    # http://localhost:3000
+pnpm install && pnpm --filter @bsa/web dev
 ```
 
-Sign in with one of the seeded accounts (`Chris Coach` for the coach dashboard,
-`Jake Williams` for the player view).
+API docs: http://localhost:8000/docs
+
+</details>
+
+## When your real TrackMan data arrives
+
+Three steps, in order.
+
+**1. See what the file contains.** This reads only; it writes nothing.
+
+```bash
+# put the file in ./imports first -- that folder is mounted into the container
+docker compose exec api python -m bsa.scripts.inspect_csv /data/imports/export.csv
+```
+
+It lists every column, flags the ones that look like fields we need, and tells
+you whether a known schema matches. If one does, skip to step 3.
+
+**2. Add the real column names.** If no schema matched, add a `ColumnMap` in
+`apps/api/src/bsa/integrations/trackman/mapping.py` using the names from step 1,
+and register it in `COLUMN_MAPS`. Nothing outside that one file changes.
+
+**3. Import it.** Data Health → *Import a TrackMan export*. Then:
+
+- Athletes we do not recognize appear under **Athlete mapping required**. Map
+  each to an existing athlete, or create a new one right there — the form is
+  pre-filled from the name TrackMan reported. Their held sessions are
+  reprocessed and attributed automatically.
+- **Import history** shows any rejected rows and why.
+- Metrics, personal records and the dashboards follow on their own.
+
+Re-importing the same file is always safe; it is detected and does nothing.
 
 ## Repository layout
 
