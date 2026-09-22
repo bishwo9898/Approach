@@ -22,6 +22,7 @@ export type CurrentUser = Schemas["CurrentUser"];
 export type PlayerSummary = Schemas["PlayerSummary"];
 export type UnresolvedIdentity = Schemas["UnresolvedIdentityOut"];
 export type ResolveIdentityResult = Schemas["ResolveIdentityOut"];
+export type CreatePlayerInput = Schemas["CreatePlayerIn"];
 export type Role = Schemas["Role"];
 
 /** Whether a value may still change when TrackMan republishes its session. */

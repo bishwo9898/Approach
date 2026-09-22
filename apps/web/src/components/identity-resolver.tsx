@@ -3,11 +3,13 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CreatePlayerForm } from "@/components/create-player-form";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { usePlayerSearch, useResolveIdentity } from "@/hooks/use-api";
 import { ApiError } from "@/lib/api";
 import { formatRelative } from "@/lib/format";
+import { splitVendorName } from "@/lib/vendor-name";
 import type { UnresolvedIdentity } from "@/lib/types";
 
 /**
@@ -76,8 +78,13 @@ function UnresolvedRow({
   onResolved: (message: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"existing" | "create">("existing");
   const [term, setTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  // A suggestion for the human to confirm. The vendor's name never matches an
+  // athlete on its own -- only a person choosing one does.
+  const suggested = splitVendorName(item.external_display_name);
 
   const { data: candidates } = usePlayerSearch(term);
   const resolve = useResolveIdentity();
@@ -127,43 +134,79 @@ function UnresolvedRow({
       </div>
 
       {open ? (
-        <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
-          <p className="text-xs text-muted-foreground">
-            Choose the athlete this TrackMan id belongs to. Their held sessions will be
-            reprocessed and attributed.
-          </p>
-          <Input
-            value={term}
-            onChange={(event) => setTerm(event.target.value)}
-            placeholder="Search athletes by name…"
-            aria-label={`Search athletes to map ${item.external_id}`}
-            autoFocus
-          />
-          <div className="max-h-48 divide-y divide-border overflow-y-auto rounded-md border border-border bg-background">
-            {(candidates ?? []).length === 0 ? (
-              <p className="px-3 py-2 text-xs text-muted-foreground">
-                No athletes match. They may need to be created first.
-              </p>
-            ) : (
-              (candidates ?? []).map((player) => (
-                <button
-                  key={player.id}
-                  type="button"
-                  disabled={resolve.isPending}
-                  onClick={() => void map(player.id)}
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-accent disabled:opacity-50"
-                >
-                  <span>{player.display_name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {[player.position, player.graduation_year]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                </button>
-              ))
-            )}
+        <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3">
+          <div className="flex gap-1">
+            <Button
+              size="sm"
+              variant={mode === "existing" ? "default" : "outline"}
+              onClick={() => setMode("existing")}
+            >
+              Map to existing athlete
+            </Button>
+            <Button
+              size="sm"
+              variant={mode === "create" ? "default" : "outline"}
+              onClick={() => setMode("create")}
+            >
+              Create new athlete
+            </Button>
           </div>
-          {error ? <p className="text-xs text-negative">{error}</p> : null}
+
+          {mode === "create" ? (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Pre-filled from the name TrackMan reported. Check it before saving — this
+                is a suggestion, not a match.
+              </p>
+              <CreatePlayerForm
+                initialFirstName={suggested.firstName}
+                initialLastName={suggested.lastName}
+                submitLabel="Create and map"
+                onCreated={(player) => void map(player.id)}
+                onCancel={() => setMode("existing")}
+              />
+              {error ? <p className="text-xs text-negative">{error}</p> : null}
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Choose the athlete this TrackMan id belongs to. Their held sessions will
+                be reprocessed and attributed.
+              </p>
+              <Input
+                value={term}
+                onChange={(event) => setTerm(event.target.value)}
+                placeholder="Search athletes by name…"
+                aria-label={`Search athletes to map ${item.external_id}`}
+                autoFocus
+              />
+              <div className="max-h-48 divide-y divide-border overflow-y-auto rounded-md border border-border bg-background">
+                {(candidates ?? []).length === 0 ? (
+                  <p className="px-3 py-2 text-xs text-muted-foreground">
+                    No athletes match. They may need to be created first.
+                  </p>
+                ) : (
+                  (candidates ?? []).map((player) => (
+                    <button
+                      key={player.id}
+                      type="button"
+                      disabled={resolve.isPending}
+                      onClick={() => void map(player.id)}
+                      className="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-accent disabled:opacity-50"
+                    >
+                      <span>{player.display_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {[player.position, player.graduation_year]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+              {error ? <p className="text-xs text-negative">{error}</p> : null}
+            </>
+          )}
         </div>
       ) : null}
     </li>

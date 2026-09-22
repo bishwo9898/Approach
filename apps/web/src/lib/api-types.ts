@@ -276,7 +276,19 @@ export interface paths {
      */
     get: operations["list_players_api_v1_players_get"];
     put?: never;
-    post?: never;
+    /**
+     * Create Player
+     * @description Add an athlete to the roster.
+     *
+     *     Creating an athlete deliberately does NOT map them to any vendor identity.
+     *     That is a separate, explicit step, so a new roster entry can never silently
+     *     adopt somebody else's TrackMan data.
+     *
+     *     Duplicate names are allowed and not warned about: two athletes really can
+     *     share a name, and blocking that would be worse than having two rows a coach
+     *     can tell apart.
+     */
+    post: operations["create_player_api_v1_players_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -508,6 +520,28 @@ export interface components {
       /** File */
       file: string;
     };
+    /**
+     * CreatePlayerIn
+     * @description Add an athlete to the roster.
+     *
+     *     Only the name is required. Everything else is a coaching label that can be
+     *     filled in later, and demanding it up front would make adding a roster of
+     *     thirty athletes needlessly slow.
+     */
+    CreatePlayerIn: {
+      bats?: components["schemas"]["Handedness"] | null;
+      /** First Name */
+      first_name: string;
+      /** Graduation Year */
+      graduation_year?: number | null;
+      /** Last Name */
+      last_name: string;
+      /** Position */
+      position?: string | null;
+      /** Preferred Name */
+      preferred_name?: string | null;
+      throws?: components["schemas"]["Handedness"] | null;
+    };
     /** CurrentUser */
     CurrentUser: {
       /** Display Name */
@@ -535,10 +569,17 @@ export interface components {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
     };
+    /**
+     * Handedness
+     * @enum {string}
+     */
+    Handedness: "L" | "R" | "S";
     /** HealthOut */
     HealthOut: {
       /** Database */
       database: string;
+      /** Database Target */
+      database_target: string;
       /** Environment */
       environment: string;
       /** Status */
@@ -1490,6 +1531,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PlayerSummary"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_player_api_v1_players_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreatePlayerIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PlayerSummary"];
         };
       };
       /** @description Validation Error */

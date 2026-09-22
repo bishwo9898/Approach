@@ -27,6 +27,86 @@
         "title": "Body_upload_trackman_csv_api_v1_imports_trackman_csv_post",
         "type": "object"
       },
+      "CreatePlayerIn": {
+        "description": "Add an athlete to the roster.\n\nOnly the name is required. Everything else is a coaching label that can be\nfilled in later, and demanding it up front would make adding a roster of\nthirty athletes needlessly slow.",
+        "properties": {
+          "bats": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Handedness"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "First Name",
+            "type": "string"
+          },
+          "graduation_year": {
+            "anyOf": [
+              {
+                "maximum": 2100.0,
+                "minimum": 1900.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graduation Year"
+          },
+          "last_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Last Name",
+            "type": "string"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "preferred_name": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Name"
+          },
+          "throws": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Handedness"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "first_name",
+          "last_name"
+        ],
+        "title": "CreatePlayerIn",
+        "type": "object"
+      },
       "CurrentUser": {
         "properties": {
           "display_name": {
@@ -91,10 +171,23 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "Handedness": {
+        "enum": [
+          "L",
+          "R",
+          "S"
+        ],
+        "title": "Handedness",
+        "type": "string"
+      },
       "HealthOut": {
         "properties": {
           "database": {
             "title": "Database",
+            "type": "string"
+          },
+          "database_target": {
+            "title": "Database Target",
             "type": "string"
           },
           "environment": {
@@ -114,7 +207,8 @@
           "status",
           "version",
           "environment",
-          "database"
+          "database",
+          "database_target"
         ],
         "title": "HealthOut",
         "type": "object"
@@ -2167,6 +2261,46 @@
           }
         },
         "summary": "List Players",
+        "tags": [
+          "players"
+        ]
+      },
+      "post": {
+        "description": "Add an athlete to the roster.\n\nCreating an athlete deliberately does NOT map them to any vendor identity.\nThat is a separate, explicit step, so a new roster entry can never silently\nadopt somebody else's TrackMan data.\n\nDuplicate names are allowed and not warned about: two athletes really can\nshare a name, and blocking that would be worse than having two rows a coach\ncan tell apart.",
+        "operationId": "create_player_api_v1_players_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlayerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Player",
         "tags": [
           "players"
         ]

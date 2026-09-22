@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
-import type { TimeRange } from "@/lib/types";
+import type { CreatePlayerInput, TimeRange } from "@/lib/types";
 
 /**
  * Server state lives in TanStack Query, not in component state.
@@ -127,6 +127,16 @@ export function useReprocessImport() {
   return useMutation({
     mutationFn: (importId: string) => api.reprocessImport(importId),
     onSuccess: () => invalidateAfterIngest(queryClient),
+  });
+}
+
+export function useCreatePlayer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreatePlayerInput) => api.createPlayer(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["players"] });
+    },
   });
 }
 

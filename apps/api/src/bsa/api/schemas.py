@@ -11,10 +11,11 @@ import uuid
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from bsa.domain.enums import (
     Aggregation,
+    Handedness,
     ImportIssueCode,
     ImportStatus,
     MetricCategory,
@@ -52,6 +53,41 @@ class PlayerSummary(ApiModel):
     bats: str | None = None
     throws: str | None = None
     active: bool
+
+
+class CreatePlayerIn(BaseModel):
+    """Add an athlete to the roster.
+
+    Only the name is required. Everything else is a coaching label that can be
+    filled in later, and demanding it up front would make adding a roster of
+    thirty athletes needlessly slow.
+    """
+
+    first_name: str = Field(min_length=1, max_length=100)
+    last_name: str = Field(min_length=1, max_length=100)
+    preferred_name: str | None = Field(default=None, max_length=100)
+    position: str | None = Field(default=None, max_length=32)
+    graduation_year: int | None = Field(default=None, ge=1900, le=2100)
+    bats: Handedness | None = None
+    throws: Handedness | None = None
+
+    @field_validator("first_name", "last_name", mode="before")
+    @classmethod
+    def _require_a_real_name(cls, value: object) -> object:
+        """Strip before length checking, so "   " is rejected rather than stored.
+
+        `min_length` alone accepts whitespace, which would create an athlete
+        with a blank surname that no search would ever find.
+        """
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("preferred_name", "position", mode="before")
+    @classmethod
+    def _blank_optional_is_none(cls, value: object) -> object:
+        """Treat an empty optional field as absent rather than as an empty string."""
+        if isinstance(value, str):
+            return value.strip() or None
+        return value
 
 
 class CurrentUser(ApiModel):
@@ -307,3 +343,8 @@ class HealthOut(BaseModel):
     version: str
     environment: str
     database: str
+    #: Which database this process is actually talking to, as host:port/name.
+    #: Never includes credentials. Present so that when two stacks are running
+    #: -- a container and a local process, say -- you can tell in one request
+    #: which one answered, instead of debugging a stale dashboard.
+    database_target: str

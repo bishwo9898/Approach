@@ -11,6 +11,7 @@
 
 import { getToken } from "@/lib/session";
 import type {
+  CreatePlayerInput,
   CurrentUser,
   ImportDetail,
   ImportResult,
@@ -111,6 +112,14 @@ export const api = {
     request<PlayerSummary[]>(`/api/v1/players${qs({ q, limit })}`),
 
   player: (playerId: string) => request<PlayerSummary>(`/api/v1/players/${playerId}`),
+
+  /** Add an athlete to the roster. Does not map them to any vendor identity. */
+  createPlayer: (input: CreatePlayerInput) =>
+    request<PlayerSummary>("/api/v1/players", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }),
 
   playerOverview: (playerId: string, range: TimeRange = "30d", headlineOnly = true) =>
     request<PlayerOverview>(

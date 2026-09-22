@@ -11,14 +11,22 @@ import uuid
 from fastapi import APIRouter, Query
 
 from bsa.api import mappers, schemas
-from bsa.api.deps import CurrentPrincipal, DbSession, StaffPrincipal, authorize_player
+from bsa.api.deps import (
+    AdminPrincipal,
+    CurrentPrincipal,
+    DbSession,
+    StaffPrincipal,
+    authorize_player,
+)
 from bsa.core.errors import NotFoundError
+from bsa.db.models import Player
 from bsa.db.repositories import metrics as metrics_repo
 from bsa.db.repositories import players as players_repo
 from bsa.db.repositories import records as records_repo
 from bsa.db.repositories import sessions as sessions_repo
 from bsa.domain.analytics import TimeRange
-from bsa.services import analytics
+from bsa.domain.enums import AuditAction
+from bsa.services import analytics, audit
 
 router = APIRouter(prefix="/players", tags=["players"])
 
@@ -36,6 +44,47 @@ def list_players(
         db, principal.organization_id, q, active_only=active_only, limit=limit
     )
     return [mappers.player_summary(p) for p in found]
+
+
+@router.post("", response_model=schemas.PlayerSummary, status_code=201)
+def create_player(
+    payload: schemas.CreatePlayerIn, db: DbSession, principal: AdminPrincipal
+) -> schemas.PlayerSummary:
+    """Add an athlete to the roster.
+
+    Creating an athlete deliberately does NOT map them to any vendor identity.
+    That is a separate, explicit step, so a new roster entry can never silently
+    adopt somebody else's TrackMan data.
+
+    Duplicate names are allowed and not warned about: two athletes really can
+    share a name, and blocking that would be worse than having two rows a coach
+    can tell apart.
+    """
+    player = Player(
+        organization_id=principal.organization_id,
+        first_name=payload.first_name,
+        last_name=payload.last_name,
+        preferred_name=payload.preferred_name,
+        position=payload.position,
+        graduation_year=payload.graduation_year,
+        bats=payload.bats,
+        throws=payload.throws,
+        active=True,
+    )
+    db.add(player)
+    db.flush()
+
+    audit.record(
+        db,
+        organization_id=principal.organization_id,
+        action=AuditAction.PLAYER_CREATED,
+        target_type="player",
+        target_id=player.id,
+        actor=principal.user,
+        metadata={"display_name": player.display_name},
+    )
+    db.commit()
+    return mappers.player_summary(player)
 
 
 @router.get("/{player_id}", response_model=schemas.PlayerSummary)
