@@ -146,9 +146,14 @@ def detect_schema(headers: list[str]) -> ColumnMap:
     for column_map in COLUMN_MAPS.values():
         if column_map.required <= present:
             return column_map
+    # Every column is listed, not a truncated sample: this message is what an
+    # operator forwards when an import fails, and a clipped list means another
+    # round trip before anyone can act on it.
     raise UnknownSchemaError(
-        "no registered TrackMan schema matches this header. "
-        f"Known schemas: {sorted(COLUMN_MAPS)}. Columns seen: {sorted(present)[:15]}"
+        "No registered TrackMan schema matches this file, so nothing was imported. "
+        f"Known schemas: {sorted(COLUMN_MAPS)}. "
+        f"Columns in this file ({len(present)}): {', '.join(sorted(present))}. "
+        "Run `python -m bsa.scripts.inspect_csv <file>` for a full report."
     )
 
 

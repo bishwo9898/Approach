@@ -193,6 +193,8 @@ def test_schema_detection_requires_every_required_column() -> None:
     try:
         detect_schema(["SessionUID", "SessionDate"])
     except UnknownSchemaError as exc:
-        assert "no registered TrackMan schema" in str(exc)
+        assert "No registered TrackMan schema" in str(exc)
+        # Every column is listed, so the message is actionable on its own.
+        assert "Columns in this file" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("expected UnknownSchemaError")

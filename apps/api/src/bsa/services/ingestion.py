@@ -202,7 +202,17 @@ class IngestionService:
 
         if not parsed.sessions:
             imports_repo.add_issues(self.db, raw_import.id, parsed.issues)
-            return self._fail(raw_import, outcome, "no usable sessions were found in this payload")
+            # Surface the actual reason rather than the symptom. A file-level
+            # issue (an unrecognized header, unreadable bytes) says exactly what
+            # is wrong and is what an operator forwards; "no usable sessions"
+            # tells them nothing they can act on.
+            file_level = next((i for i in parsed.issues if not i.row_number), None)
+            reason = (
+                file_level.message
+                if file_level
+                else "no usable sessions were found in this payload"
+            )
+            return self._fail(raw_import, outcome, reason)
 
         for parsed_session in parsed.sessions:
             self._ingest_session(parsed_session, raw_import, outcome)
