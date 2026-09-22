@@ -56,29 +56,37 @@ because **running Docker and a local API at the same time collides on port 8000*
 different data. Run one or the other, not both.
 
 <details>
-<summary>Running natively instead (faster iteration for development)</summary>
+<summary>Running natively instead — also one command</summary>
 
 Prerequisites: Python 3.12+, Node 20+, [`uv`](https://docs.astral.sh/uv/), `pnpm`.
 
 ```bash
-docker compose down            # stop the containers first -- see the note above
-cp .env.example .env
-docker compose up -d db        # just PostgreSQL, on :5433
+docker compose down        # stop the containers first -- see the note above
+docker compose up -d db    # just PostgreSQL, on :5433
+./scripts/dev-setup.sh     # installs, migrates and seeds; safe to re-run
+```
+
+Then start the two servers in separate terminals:
+
+```bash
+cd apps/api && .venv/bin/uvicorn bsa.api.app:app --reload --port 8000
 ```
 
 ```bash
-cd apps/api
-uv venv --python 3.12 && uv pip install -e ".[dev]"
-.venv/bin/alembic upgrade head
-.venv/bin/python -m bsa.scripts.seed --reset
-.venv/bin/uvicorn bsa.api.app:app --reload --port 8000
-```
-
-```bash
-pnpm install && pnpm --filter @bsa/web dev
+pnpm --filter @bsa/web dev
 ```
 
 API docs: http://localhost:8000/docs
+
+</details>
+
+<details>
+<summary>If `docker compose build` hangs</summary>
+
+A build that stalls at `load metadata for docker.io/...` while `curl
+https://registry-1.docker.io/v2/` works from your shell is Docker Desktop's
+builder, not this repository. Restart Docker Desktop and build again. If you
+need to keep working in the meantime, use the native setup above.
 
 </details>
 
