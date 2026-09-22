@@ -11,6 +11,7 @@ from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import urlsplit
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -84,6 +85,29 @@ class Settings(BaseSettings):
     @property
     def is_development(self) -> bool:
         return self.env is Environment.DEVELOPMENT
+
+    @property
+    def database_target(self) -> str:
+        """`host:port/name` for the configured database, without credentials.
+
+        Used by /health so it is obvious which database a process is attached
+        to. Deliberately reconstructed field by field rather than by trimming
+        the URL string, so a password cannot survive a parsing mistake.
+        """
+        try:
+            parsed = urlsplit(self.database_url)
+            host, port = parsed.hostname, parsed.port
+        except ValueError:
+            return "unknown"
+
+        # No host means the URL did not parse as one. Returning any part of the
+        # raw string here could echo back a malformed URL that still contains a
+        # password, so report nothing instead.
+        if not host:
+            return "unknown"
+
+        name = (parsed.path or "").lstrip("/") or "unknown"
+        return f"{host}{':' + str(port) if port else ''}/{name}"
 
 
 @lru_cache

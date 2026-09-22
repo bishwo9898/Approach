@@ -90,6 +90,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             version=__version__,
             environment=settings.env.value,
             database=database,
+            database_target=settings.database_target,
         )
 
     app.include_router(api_router)
