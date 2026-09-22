@@ -392,7 +392,7 @@ class TrackmanCsvProvider:
                 values[target] = None
                 continue
             try:
-                converted = convert(raw, column.unit.value, column.unit)
+                converted = convert(raw, column.reported_unit, column.unit)
             except UnitConversionError as exc:
                 issues.append(
                     RowIssue(

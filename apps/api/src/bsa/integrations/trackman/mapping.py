@@ -32,15 +32,29 @@ from bsa.domain.vocabulary import BattedBallType, PitchCall, PitchType
 
 @dataclass(frozen=True, slots=True)
 class NumericColumn:
-    """A measured column and the unit the vendor reports it in."""
+    """A measured column, the unit we store it in, and the unit it arrives in."""
 
     source: str
+    #: The canonical unit this column is stored as. See `bsa.core.units`.
     unit: Unit
     #: Readings outside this range are rejected as tracking artifacts rather
     #: than stored. Bounds are generous: the intent is to exclude impossible
-    #: values, not to second-guess an athlete.
+    #: values, not to second-guess an athlete. Expressed in the CANONICAL unit,
+    #: so bounds do not change when a vendor reports something different.
     min_value: float | None = None
     max_value: float | None = None
+    #: What the vendor actually reports, when that is not the canonical unit --
+    #: for example "m/s" for a velocity we store as mph. Defaults to the
+    #: canonical unit, which is the common case.
+    #:
+    #: This is the single most dangerous thing to get wrong in the whole
+    #: mapping: a velocity read as mph when it is metres per second is out by a
+    #: factor of 2.24 and every resulting number still looks plausible.
+    source_unit: str | None = None
+
+    @property
+    def reported_unit(self) -> str:
+        return self.source_unit or self.unit.value
 
 
 @dataclass(frozen=True, slots=True)

@@ -42,16 +42,33 @@ Enabling FTP changes one object passed to a constructor.
 
 When an authorized real export is available:
 
-1. Add a `ColumnMap` in `apps/api/src/bsa/integrations/trackman/mapping.py` with
-   the real column names and the units the vendor reports them in.
-2. Register it in `COLUMN_MAPS` under a new version key.
-3. Confirm `detect_schema` distinguishes it from `synthetic.v1` by its required
+1. Run `python -m bsa.scripts.inspect_csv <file>` first. It lists every column,
+   flags the ones that look like fields we need, and writes nothing.
+2. Add a `ColumnMap` in `apps/api/src/bsa/integrations/trackman/mapping.py` with
+   the real column names. Where the vendor reports a different unit from the one
+   we store, set `source_unit` on that column:
+
+   ```python
+   "velocity_mph": NumericColumn(
+       "ReleaseVelocity", Unit.MPH, 20.0, 110.0, source_unit="m/s"
+   )
+   ```
+
+   This is the single most dangerous thing to get wrong: a velocity read as mph
+   when it is metres per second is out by a factor of 2.24, and every resulting
+   number still looks plausible. `min_value`/`max_value` are always expressed in
+   the canonical unit, so the bounds do not move when the source unit does.
+3. Register it in `COLUMN_MAPS` under a new version key.
+4. Confirm `detect_schema` distinguishes it from `synthetic.v1` by its required
    columns.
-4. Reprocess the archived raw imports — the originals are in object storage
+5. Reprocess the archived raw imports — the originals are in object storage
    precisely so this does not require re-exporting from TrackMan.
 
 Nothing outside that file should need to change. That separation is the entire
-reason the file exists.
+reason the file exists, and
+`tests/integration/test_new_schema_support.py` proves it: it registers a schema
+sharing no column names with ours, in different units, and asserts the whole
+pipeline through to personal records still works.
 
 **Do not** delete `synthetic.v1`. It backs the seed data and the test suite, and
 it keeps a concrete example next to the documentation.
