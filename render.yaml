@@ -1,0 +1,49 @@
+# Render blueprint for the API and its database.
+#
+# Vercel hosts the Next.js frontend; it cannot run FastAPI or PostgreSQL, so
+# those live here. Deploy this first -- the frontend needs the API's URL at
+# build time.
+#
+#   1. render.com -> New -> Blueprint -> point at this repository
+#   2. Set the two passcodes when prompted (they are marked sync: false)
+#   3. Copy the API URL, then deploy apps/web to Vercel with it set as
+#      NEXT_PUBLIC_API_BASE_URL
+#   4. Come back and set BSA_CORS_ORIGINS to the Vercel URL
+
+databases:
+  - name: bsa-postgres
+    databaseName: bsa
+    user: bsa
+    plan: free
+
+services:
+  - type: web
+    name: bsa-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: ./apps/api
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      # staging, not production: the passcode gate is a demo control, and
+      # production has stricter requirements this deployment does not meet yet.
+      - key: BSA_ENV
+        value: staging
+      - key: BSA_AUTH_PROVIDER
+        value: passcode
+      - key: BSA_DATABASE_URL
+        fromDatabase:
+          name: bsa-postgres
+          property: connectionString
+      - key: BSA_OBJECT_STORE_BACKEND
+        value: local
+      - key: BSA_OBJECT_STORE_LOCAL_ROOT
+        value: /tmp/objectstore
+      # Set these in the Render dashboard. Never commit them.
+      - key: BSA_COACH_PASSCODE
+        sync: false
+      - key: BSA_PLAYER_PASSCODE
+        sync: false
+      # The deployed frontend's origin, e.g. https://approach.vercel.app
+      - key: BSA_CORS_ORIGINS
+        sync: false

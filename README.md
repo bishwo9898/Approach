@@ -45,8 +45,8 @@ docker compose up -d --build
 docker compose exec api python -m bsa.scripts.seed --reset
 ```
 
-Open **http://localhost:3000** and sign in as **Chris Coach** (or **Dana Admin**
-for import and athlete-mapping tools). The seed prints every login.
+Open **http://localhost:3000** and sign in. The seed prints the passcodes;
+in development they are `coach` and `player`.
 
 To stop: `docker compose down`. To wipe the data too: `docker compose down -v`.
 
@@ -245,6 +245,7 @@ Extension points exist. A reliable data foundation comes first.
 
 | | |
 |---|---|
+| [DEPLOY.md](docs/DEPLOY.md) | Putting a shareable demo on Vercel + Render |
 | [GOING_LIVE.md](docs/GOING_LIVE.md) | **Start here** — the path from synthetic data to real athletes |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layering, idempotency, reconciliation, why the PR engine is derived |
 | [DATA_MODEL.md](docs/DATA_MODEL.md) | All 17 tables, constraints, and what they answer |
