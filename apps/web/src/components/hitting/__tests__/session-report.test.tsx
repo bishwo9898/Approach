@@ -97,7 +97,9 @@ describe("HittingSessionReport", () => {
     render(<HittingSessionReport report={base} />);
 
     expect(screen.getByText(/Live at-bats · vs Pete Nolan/)).toBeInTheDocument();
-    expect(screen.getByText(/66 pitches faced/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/66 pitches · 34 swings · 16 balls measured/),
+    ).toBeInTheDocument();
   });
 
   it("shows measurements with their units", () => {
@@ -119,9 +121,14 @@ describe("HittingSessionReport", () => {
   it("marks a pitch group that cannot be judged", () => {
     render(<HittingSessionReport report={base} />);
 
-    const row = screen.getByText("Breaking / offspeed").closest("tr");
-    expect(row).not.toBeNull();
-    expect(within(row as HTMLElement).getByText("too few to judge")).toBeInTheDocument();
+    // The card for the thin split carries the caveat, not some other card.
+    const card = screen.getByText("Breaking / offspeed").closest("div")
+      ?.parentElement as HTMLElement;
+    expect(within(card).getByText("too few to judge")).toBeInTheDocument();
+
+    const judged = screen.getByText("Fastballs").closest("div")
+      ?.parentElement as HTMLElement;
+    expect(within(judged).queryByText("too few to judge")).toBeNull();
   });
 
   it("puts strengths before the caveats", () => {
@@ -137,9 +144,7 @@ describe("HittingSessionReport", () => {
     render(<HittingSessionReport report={base} />);
 
     expect(
-      screen.getByText(
-        /did not label pitch types.*grouped by measured vertical movement/i,
-      ),
+      screen.getByText(/grouped by measured movement.*does not label pitch types/i),
     ).toBeInTheDocument();
   });
 
@@ -173,7 +178,7 @@ describe("HittingSessionReport", () => {
   it("invites video rather than pretending there is none to have", () => {
     render(<HittingSessionReport report={base} />);
 
-    expect(screen.getByText("No video for this session yet")).toBeInTheDocument();
+    expect(screen.getByText("No video yet")).toBeInTheDocument();
   });
 
   it("lists attached video with the pitch it belongs to", () => {

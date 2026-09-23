@@ -16,13 +16,8 @@ function Brand() {
       <span className="surface-grid grid size-9 place-items-center rounded-xl bg-white/10 ring-1 ring-white/15">
         <span className="block size-3.5 rotate-45 rounded-[3px] border-2 border-blue-300" />
       </span>
-      <span>
-        <span className="block text-[15px] font-semibold tracking-tight text-white">
-          Approach
-        </span>
-        <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400">
-          Player Development
-        </span>
+      <span className="text-[15px] font-semibold tracking-tight text-white">
+        Approach
       </span>
     </Link>
   );
@@ -60,15 +55,7 @@ export function AppShell({
         <div className="px-2">
           <Brand />
         </div>
-        <div className="mt-8 px-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Workspace
-          </p>
-          <p className="mt-1 truncate text-sm font-medium text-slate-200">
-            {user?.organization_name ?? "Baseball Analytics"}
-          </p>
-        </div>
-        <nav className="mt-6 space-y-1" aria-label="Primary navigation">
+        <nav className="mt-8 space-y-1" aria-label="Primary navigation">
           {nav.map((item) => {
             const active = isActive(item.href);
             return (
