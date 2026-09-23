@@ -189,6 +189,63 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/hitting/latest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * My Latest Session
+     * @description The athlete's most recent batting session.
+     *
+     *     The player dashboard opens straight to this -- there is nothing to choose
+     *     from until they have batted more than once.
+     */
+    get: operations["my_latest_session_api_v1_me_hitting_latest_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/hitting/sessions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My Hitting Sessions */
+    get: operations["my_hitting_sessions_api_v1_me_hitting_sessions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/hitting/sessions/{session_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My Session */
+    get: operations["my_session_api_v1_me_hitting_sessions__session_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/overview": {
     parameters: {
       query?: never;
@@ -306,6 +363,80 @@ export interface paths {
     get: operations["get_player_api_v1_players__player_id__get"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/players/{player_id}/hitting/latest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Latest Hitting Session */
+    get: operations["latest_hitting_session_api_v1_players__player_id__hitting_latest_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/players/{player_id}/hitting/sessions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Hitting Sessions */
+    get: operations["hitting_sessions_api_v1_players__player_id__hitting_sessions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/players/{player_id}/hitting/sessions/{session_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Hitting Session */
+    get: operations["hitting_session_api_v1_players__player_id__hitting_sessions__session_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/players/{player_id}/hitting/sessions/{session_id}/videos": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add Video
+     * @description Attach a video of this athlete's session.
+     *
+     *     Admin-only, and the link must be http(s) -- this is rendered on a page shown
+     *     to a minor, so an unchecked URL would be a stored scripting hole.
+     */
+    post: operations["add_video_api_v1_players__player_id__hitting_sessions__session_id__videos_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -510,11 +641,33 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AddSessionVideoIn */
+    AddSessionVideoIn: {
+      /** External Event Id */
+      external_event_id?: string | null;
+      /** Note */
+      note?: string | null;
+      /** Title */
+      title: string;
+      /** Url */
+      url: string;
+    };
     /**
      * Aggregation
      * @enum {string}
      */
     Aggregation: "MAX" | "MIN" | "AVG" | "COUNT" | "SUM" | "RATE";
+    /** BattedBallOut */
+    BattedBallOut: {
+      /** Event Number */
+      event_number: number | null;
+      /** Exit Velocity Mph */
+      exit_velocity_mph: number;
+      /** In Sweet Spot */
+      in_sweet_spot: boolean;
+      /** Launch Angle Deg */
+      launch_angle_deg: number | null;
+    };
     /** Body_upload_trackman_csv_api_v1_imports_trackman_csv_post */
     Body_upload_trackman_csv_api_v1_imports_trackman_csv_post: {
       /** File */
@@ -586,6 +739,82 @@ export interface components {
       status: string;
       /** Version */
       version: string;
+    };
+    /** HittingSessionReportOut */
+    HittingSessionReportOut: {
+      /** Average Exit Velocity Mph */
+      average_exit_velocity_mph: number | null;
+      /** Average Launch Angle Deg */
+      average_launch_angle_deg: number | null;
+      /** Batted Balls */
+      batted_balls: number;
+      /** Best Exit Velocity Mph */
+      best_exit_velocity_mph: number | null;
+      /** Contact */
+      contact: components["schemas"]["BattedBallOut"][];
+      /** Groups */
+      groups: components["schemas"]["PitchGroupSplitOut"][];
+      /** Insights */
+      insights: components["schemas"]["InsightOut"][];
+      /** Opponent Name */
+      opponent_name: string | null;
+      /** Pitches Faced */
+      pitches_faced: number;
+      player: components["schemas"]["PlayerSummary"];
+      /**
+       * Session Date
+       * Format: date
+       */
+      session_date: string;
+      /**
+       * Session Id
+       * Format: uuid
+       */
+      session_id: string;
+      /** Session Type */
+      session_type: string | null;
+      /** Sweet Spot Count */
+      sweet_spot_count: number;
+      /** Sweet Spot Rate */
+      sweet_spot_rate: number | null;
+      /** Swing Rate */
+      swing_rate: number | null;
+      /** Swings */
+      swings: number;
+      /** Taken */
+      taken: number;
+      /** Videos */
+      videos: components["schemas"]["SessionVideoOut"][];
+      /** Whiff Rate */
+      whiff_rate: number | null;
+      /** Whiffs */
+      whiffs: number;
+    };
+    /**
+     * HittingSessionSummaryOut
+     * @description One line per session, for choosing which report to open.
+     */
+    HittingSessionSummaryOut: {
+      /** Batted Balls */
+      batted_balls: number;
+      /** Best Exit Velocity Mph */
+      best_exit_velocity_mph: number | null;
+      /** Opponent Name */
+      opponent_name: string | null;
+      /** Pitches Faced */
+      pitches_faced: number;
+      /**
+       * Session Date
+       * Format: date
+       */
+      session_date: string;
+      /**
+       * Session Id
+       * Format: uuid
+       */
+      session_id: string;
+      /** Session Type */
+      session_type: string | null;
     };
     /** ImportDetailOut */
     ImportDetailOut: {
@@ -724,6 +953,15 @@ export interface components {
      */
     ImportStatus:
       "RECEIVED" | "PROCESSING" | "SUCCESS" | "PARTIAL" | "FAILED" | "SKIPPED_DUPLICATE";
+    /** InsightOut */
+    InsightOut: {
+      /** Detail */
+      detail: string;
+      /** Headline */
+      headline: string;
+      /** Kind */
+      kind: string;
+    };
     /** IntegrationHealthOut */
     IntegrationHealthOut: {
       /** Failed Imports 7D */
@@ -903,6 +1141,31 @@ export interface components {
       /** Value */
       value: number;
     };
+    /** PitchGroupSplitOut */
+    PitchGroupSplitOut: {
+      /** Average Exit Velocity Mph */
+      average_exit_velocity_mph: number | null;
+      /** Average Pitch Velocity Mph */
+      average_pitch_velocity_mph: number | null;
+      /** Batted Balls */
+      batted_balls: number;
+      /** Best Exit Velocity Mph */
+      best_exit_velocity_mph: number | null;
+      /** Enough To Judge */
+      enough_to_judge: boolean;
+      /** Group */
+      group: string;
+      /** Label */
+      label: string;
+      /** Seen */
+      seen: number;
+      /** Swings */
+      swings: number;
+      /** Whiff Rate */
+      whiff_rate: number | null;
+      /** Whiffs */
+      whiffs: number;
+    };
     /** PlayerOverviewOut */
     PlayerOverviewOut: {
       last_session: components["schemas"]["SessionOut"] | null;
@@ -1017,6 +1280,22 @@ export interface components {
       venue?: string | null;
       /** Verified At */
       verified_at?: string | null;
+    };
+    /** SessionVideoOut */
+    SessionVideoOut: {
+      /** External Event Id */
+      external_event_id: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Note */
+      note: string | null;
+      /** Title */
+      title: string;
+      /** Url */
+      url: string;
     };
     /**
      * SourceStatus
@@ -1397,6 +1676,77 @@ export interface operations {
       };
     };
   };
+  my_latest_session_api_v1_me_hitting_latest_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HittingSessionReportOut"];
+        };
+      };
+    };
+  };
+  my_hitting_sessions_api_v1_me_hitting_sessions_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HittingSessionSummaryOut"][];
+        };
+      };
+    };
+  };
+  my_session_api_v1_me_hitting_sessions__session_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HittingSessionReportOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   my_overview_api_v1_me_overview_get: {
     parameters: {
       query?: {
@@ -1595,6 +1945,136 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PlayerSummary"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  latest_hitting_session_api_v1_players__player_id__hitting_latest_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        player_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HittingSessionReportOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  hitting_sessions_api_v1_players__player_id__hitting_sessions_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        player_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HittingSessionSummaryOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  hitting_session_api_v1_players__player_id__hitting_sessions__session_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        player_id: string;
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HittingSessionReportOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  add_video_api_v1_players__player_id__hitting_sessions__session_id__videos_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        player_id: string;
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AddSessionVideoIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionVideoOut"];
         };
       };
       /** @description Validation Error */

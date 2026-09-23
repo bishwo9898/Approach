@@ -64,6 +64,7 @@ export function PlayerSearch({ autoFocus = false }: { autoFocus?: boolean }) {
             <li key={player.id}>
               <button
                 type="button"
+                data-testid="athlete-row"
                 onClick={() => router.push(`/coach/players/${player.id}`)}
                 className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/60"
               >

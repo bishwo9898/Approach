@@ -12,6 +12,8 @@
 import { getToken } from "@/lib/session";
 import type {
   CreatePlayerInput,
+  HittingReport,
+  HittingSessionSummary,
   CurrentUser,
   ImportDetail,
   ImportResult,
@@ -181,6 +183,24 @@ export const api = {
 
   markFuturesUpdated: (jobId: string) =>
     request<SyncJob>(`/api/v1/sync/futures/${jobId}/mark-updated`, { method: "POST" }),
+
+  // -- hitting session reports --------------------------------------------
+  myLatestHittingSession: () => request<HittingReport>("/api/v1/me/hitting/latest"),
+
+  myHittingSessions: () =>
+    request<HittingSessionSummary[]>("/api/v1/me/hitting/sessions"),
+
+  myHittingSession: (sessionId: string) =>
+    request<HittingReport>(`/api/v1/me/hitting/sessions/${sessionId}`),
+
+  latestHittingSession: (playerId: string) =>
+    request<HittingReport>(`/api/v1/players/${playerId}/hitting/latest`),
+
+  hittingSessions: (playerId: string) =>
+    request<HittingSessionSummary[]>(`/api/v1/players/${playerId}/hitting/sessions`),
+
+  hittingSession: (playerId: string, sessionId: string) =>
+    request<HittingReport>(`/api/v1/players/${playerId}/hitting/sessions/${sessionId}`),
 
   // -- player -------------------------------------------------------------
   myOverview: (range: TimeRange = "30d") =>

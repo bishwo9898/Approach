@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
-import type { CreatePlayerInput, TimeRange } from "@/lib/types";
+import type { CreatePlayerInput } from "@/lib/types";
 
 /**
  * Server state lives in TanStack Query, not in component state.
@@ -14,15 +14,6 @@ import type { CreatePlayerInput, TimeRange } from "@/lib/types";
 
 export const useCurrentUser = () =>
   useQuery({ queryKey: ["me"], queryFn: api.me, retry: false, staleTime: 5 * 60_000 });
-
-export const useToday = (date?: string) =>
-  useQuery({ queryKey: ["dashboard", "today", date], queryFn: () => api.today(date) });
-
-export const useRecentRecords = (days = 14, limit = 25) =>
-  useQuery({
-    queryKey: ["prs", "recent", days, limit],
-    queryFn: () => api.recentRecords(days, limit),
-  });
 
 export const useIntegrationStatus = () =>
   useQuery({
@@ -38,51 +29,11 @@ export const usePlayerSearch = (q: string) =>
     queryFn: () => api.searchPlayers(q || undefined),
   });
 
-export const usePlayerOverview = (playerId: string, range: TimeRange) =>
+export const usePlayer = (playerId: string) =>
   useQuery({
-    queryKey: ["players", playerId, "overview", range],
-    queryFn: () => api.playerOverview(playerId, range),
+    queryKey: ["players", playerId],
+    queryFn: () => api.player(playerId),
     enabled: Boolean(playerId),
-  });
-
-export const usePlayerSeries = (
-  playerId: string,
-  metricKey: string | undefined,
-  range: TimeRange,
-) =>
-  useQuery({
-    queryKey: ["players", playerId, "series", metricKey, range],
-    queryFn: () => api.playerSeries(playerId, metricKey as string, range),
-    enabled: Boolean(playerId && metricKey),
-  });
-
-export const usePlayerRecords = (playerId: string) =>
-  useQuery({
-    queryKey: ["players", playerId, "prs"],
-    queryFn: () => api.playerRecords(playerId),
-    enabled: Boolean(playerId),
-  });
-
-export const usePlayerSessions = (playerId: string, limit = 20) =>
-  useQuery({
-    queryKey: ["players", playerId, "sessions", limit],
-    queryFn: () => api.playerSessions(playerId, limit),
-    enabled: Boolean(playerId),
-  });
-
-export const useMyOverview = (range: TimeRange) =>
-  useQuery({ queryKey: ["me", "overview", range], queryFn: () => api.myOverview(range) });
-
-export const useMyRecords = () =>
-  useQuery({ queryKey: ["me", "prs"], queryFn: api.myRecords });
-
-export const useMySessions = (limit = 20) =>
-  useQuery({ queryKey: ["me", "sessions", limit], queryFn: () => api.mySessions(limit) });
-
-export const usePendingFuturesUpdates = () =>
-  useQuery({
-    queryKey: ["sync", "futures", "pending"],
-    queryFn: api.pendingFuturesUpdates,
   });
 
 export const useUnresolvedIdentities = () =>
@@ -130,6 +81,35 @@ export function useReprocessImport() {
   });
 }
 
+/**
+ * The hitting report is the athlete-facing view. `playerId` is omitted for a
+ * player looking at themselves -- those routes take no id at all, so there is
+ * nothing for them to tamper with.
+ */
+export const useLatestHittingSession = (playerId?: string) =>
+  useQuery({
+    queryKey: ["hitting", playerId ?? "me", "latest"],
+    queryFn: () =>
+      playerId ? api.latestHittingSession(playerId) : api.myLatestHittingSession(),
+    retry: false,
+  });
+
+export const useHittingSessions = (playerId?: string) =>
+  useQuery({
+    queryKey: ["hitting", playerId ?? "me", "sessions"],
+    queryFn: () => (playerId ? api.hittingSessions(playerId) : api.myHittingSessions()),
+  });
+
+export const useHittingSession = (sessionId: string | null, playerId?: string) =>
+  useQuery({
+    queryKey: ["hitting", playerId ?? "me", "session", sessionId],
+    queryFn: () =>
+      playerId
+        ? api.hittingSession(playerId, sessionId as string)
+        : api.myHittingSession(sessionId as string),
+    enabled: Boolean(sessionId),
+  });
+
 export function useCreatePlayer() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -147,17 +127,5 @@ export function useResolveIdentity() {
       api.resolveIdentity(vars.itemId, vars.playerId, vars.note),
     // Resolution reprocesses held imports, so it can change every derived view.
     onSuccess: () => invalidateAfterIngest(queryClient),
-  });
-}
-
-export function useMarkFuturesUpdated() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (jobId: string) => api.markFuturesUpdated(jobId),
-    onSuccess: () => {
-      // The worklist and the health panel both change; refetch both.
-      void queryClient.invalidateQueries({ queryKey: ["sync", "futures", "pending"] });
-      void queryClient.invalidateQueries({ queryKey: ["integrations", "status"] });
-    },
   });
 }

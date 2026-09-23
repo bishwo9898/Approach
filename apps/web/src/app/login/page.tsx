@@ -14,7 +14,7 @@ import {
 import { Icon } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
-import { DEV_TOKENS, setToken } from "@/lib/session";
+import { ACCOUNTS, setToken } from "@/lib/session";
 
 /** Development sign-in, replaced by the production identity provider. */
 export default function LoginPage() {
@@ -118,16 +118,17 @@ export default function LoginPage() {
               ) : null}
               <div className="border-t border-border pt-5">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium">Seeded accounts</p>
+                  <p className="text-xs font-medium">Sign in as</p>
                   <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
                     Development only
                   </span>
                 </div>
                 <div className="mt-3 grid gap-2">
-                  {DEV_TOKENS.map((entry) => (
+                  {ACCOUNTS.map((entry) => (
                     <button
                       key={entry.token}
                       type="button"
+                      data-testid={`account-${entry.role.toLowerCase()}`}
                       disabled={busy}
                       onClick={() => void signIn(entry.token)}
                       className="group flex items-center gap-3 rounded-xl border border-border px-3 py-2.5 text-left transition-all hover:border-blue-200 hover:bg-blue-50/50 disabled:opacity-50"
@@ -135,7 +136,12 @@ export default function LoginPage() {
                       <span className="grid size-8 place-items-center rounded-lg bg-muted text-xs font-semibold text-muted-foreground">
                         {entry.label[0]}
                       </span>
-                      <span className="flex-1 text-sm font-medium">{entry.label}</span>
+                      <span className="flex-1">
+                        <span className="block text-sm font-medium">{entry.label}</span>
+                        <span className="block text-[11px] text-muted-foreground">
+                          {entry.blurb}
+                        </span>
+                      </span>
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                         {entry.role}
                       </span>

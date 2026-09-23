@@ -40,10 +40,27 @@ export function clearToken(): void {
   }
 }
 
-/** The tokens the seed script creates. Development convenience only. */
-export const DEV_TOKENS = [
-  { token: "dev|coach", label: "Chris Coach", role: "COACH" },
-  { token: "dev|admin", label: "Dana Admin", role: "ADMIN" },
-  { token: "dev|player", label: "Jake Williams", role: "PLAYER" },
-  { token: "dev|player2", label: "Marcus Cole", role: "PLAYER" },
+/**
+ * The two accounts we are testing with.
+ *
+ * Created by `python -m bsa.scripts.seed_athlete`. The player account is
+ * linked to whichever athlete the loaded export names, so no real name lives
+ * in this repository. These are identities rather
+ * than credentials: the development auth provider treats the token as the
+ * subject, and refuses to run outside development. Clerk replaces all of this
+ * before any real sign-in exists.
+ */
+export const ACCOUNTS = [
+  {
+    token: "dev|coach",
+    label: "Coach",
+    role: "COACH" as const,
+    blurb: "See every athlete and import new sessions",
+  },
+  {
+    token: "dev|player",
+    label: "Player",
+    role: "PLAYER" as const,
+    blurb: "See only your own sessions",
+  },
 ] as const;

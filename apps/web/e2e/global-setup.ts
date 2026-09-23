@@ -33,9 +33,18 @@ async function globalSetup(config: FullConfig): Promise<void> {
   }).catch(() => null);
   if (!me?.ok) {
     throw new Error(
-      "The seeded development accounts are missing. Run:\n" +
-        "  cd apps/api && .venv/bin/python -m bsa.scripts.seed --reset",
+      "The testing accounts are missing. Run:\n" +
+        '  cd apps/api && .venv/bin/python -m bsa.scripts.seed_athlete "<export>.csv"',
     );
+  }
+
+  // The reports need a real session behind them, and an empty database would
+  // fail every test with a timeout rather than a reason.
+  const report = await fetch(`${apiBase}/api/v1/me/hitting/latest`, {
+    headers: { Authorization: "Bearer dev|player" },
+  }).catch(() => null);
+  if (!report?.ok) {
+    throw new Error("No batting session is loaded. Run seed_athlete with a real export.");
   }
 
   for (const route of ROUTES) {
