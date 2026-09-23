@@ -8,10 +8,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from bsa.api.v1 import dashboard, imports, me, metrics, players, sync
+from bsa.api.v1 import dashboard, hitting, imports, me, metrics, players, sync
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(me.router)
+api_router.include_router(hitting.router)
 api_router.include_router(players.router)
 api_router.include_router(metrics.router)
 api_router.include_router(dashboard.router)

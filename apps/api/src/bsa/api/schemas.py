@@ -218,6 +218,110 @@ class PersonalRecordEventOut(ApiModel):
     source_status: SourceStatus
 
 
+# -- hitting session report -------------------------------------------------
+
+
+class InsightOut(ApiModel):
+    kind: str
+    headline: str
+    detail: str
+
+
+class PitchGroupSplitOut(ApiModel):
+    group: str
+    label: str
+    seen: int
+    swings: int
+    whiffs: int
+    whiff_rate: float | None
+    batted_balls: int
+    average_pitch_velocity_mph: float | None
+    average_exit_velocity_mph: float | None
+    best_exit_velocity_mph: float | None
+    #: False when the split is shown for completeness but must not be read as
+    #: a strength or a weakness.
+    enough_to_judge: bool
+
+
+class BattedBallOut(ApiModel):
+    event_number: int | None
+    exit_velocity_mph: float
+    launch_angle_deg: float | None
+    in_sweet_spot: bool
+
+
+class SessionVideoOut(ApiModel):
+    id: uuid.UUID
+    title: str
+    url: str
+    external_event_id: str | None
+    note: str | None
+
+
+class AddSessionVideoIn(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    url: str = Field(min_length=1, max_length=2000)
+    external_event_id: str | None = Field(default=None, max_length=128)
+    note: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("url")
+    @classmethod
+    def _must_be_a_web_link(cls, value: str) -> str:
+        """Only http(s).
+
+        A `javascript:` or `data:` URL rendered as a link on an athlete's page
+        would be a stored cross-site scripting hole, and the page is shown to
+        minors.
+        """
+        cleaned = value.strip()
+        if not cleaned.lower().startswith(("http://", "https://")):
+            raise ValueError("video links must start with http:// or https://")
+        return cleaned
+
+
+class HittingSessionReportOut(ApiModel):
+    player: PlayerSummary
+    session_id: uuid.UUID
+    session_date: date
+    session_type: str | None
+    opponent_name: str | None
+
+    pitches_faced: int
+    taken: int
+    swings: int
+    whiffs: int
+    whiff_rate: float | None
+    swing_rate: float | None
+
+    batted_balls: int
+    best_exit_velocity_mph: float | None
+    average_exit_velocity_mph: float | None
+    average_launch_angle_deg: float | None
+    sweet_spot_count: int
+    sweet_spot_rate: float | None
+
+    # Required rather than defaulted: a report always carries all four lists,
+    # empty when there is nothing in them. Defaulting them would make each one
+    # optional in the OpenAPI document, and every consumer would have to guard
+    # against an absence that never happens.
+    groups: list[PitchGroupSplitOut]
+    contact: list[BattedBallOut]
+    insights: list[InsightOut]
+    videos: list[SessionVideoOut]
+
+
+class HittingSessionSummaryOut(ApiModel):
+    """One line per session, for choosing which report to open."""
+
+    session_id: uuid.UUID
+    session_date: date
+    session_type: str | None
+    opponent_name: str | None
+    pitches_faced: int
+    batted_balls: int
+    best_exit_velocity_mph: float | None
+
+
 # -- coach dashboard --------------------------------------------------------
 
 

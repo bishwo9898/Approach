@@ -12,6 +12,7 @@ from bsa.db.models.org import Organization, User
 from bsa.db.models.player import ExternalPlayerIdentity, IdentityResolutionItem, Player
 from bsa.db.models.records import PersonalRecord, PersonalRecordEvent
 from bsa.db.models.sync import ExternalMetricMapping, SyncJob
+from bsa.db.models.video import SessionVideo
 
 __all__ = [
     "AuditLog",
@@ -28,6 +29,7 @@ __all__ = [
     "PitchEvent",
     "Player",
     "RawImport",
+    "SessionVideo",
     "SyncJob",
     "TrainingSession",
     "User",

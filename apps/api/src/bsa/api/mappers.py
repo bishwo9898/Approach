@@ -21,6 +21,7 @@ from bsa.db.models import (
     PersonalRecordEvent as PrEvent,
 )
 from bsa.services.analytics import MetricSummary, PlayerOverview
+from bsa.services.hitting import SessionReport
 from bsa.services.ingestion import ImportOutcome
 
 
@@ -230,7 +231,78 @@ def sync_job(job: SyncJob, player: Player, definition: MetricDefinition) -> sche
     )
 
 
+def hitting_report(result: SessionReport) -> schemas.HittingSessionReportOut:
+    """Render a session report, keeping every sample size attached to its number."""
+    report = result.report
+    contact = [
+        schemas.BattedBallOut(
+            event_number=p.event_number,
+            exit_velocity_mph=p.exit_velocity_mph,
+            launch_angle_deg=p.launch_angle_deg,
+            in_sweet_spot=p.in_sweet_spot,
+        )
+        for p in sorted(
+            result.contact_pitches,
+            key=lambda p: p.exit_velocity_mph or 0,
+            reverse=True,
+        )
+        if p.exit_velocity_mph is not None
+    ]
+
+    return schemas.HittingSessionReportOut(
+        player=player_summary(result.player),
+        session_id=result.session.id,
+        session_date=result.session.session_date,
+        session_type=result.session.session_type,
+        opponent_name=result.opponent_name,
+        pitches_faced=report.pitches_faced,
+        taken=report.taken,
+        swings=report.swings,
+        whiffs=report.whiffs,
+        whiff_rate=report.whiff_rate,
+        swing_rate=report.swing_rate,
+        batted_balls=report.batted_balls,
+        best_exit_velocity_mph=report.best_exit_velocity_mph,
+        average_exit_velocity_mph=report.average_exit_velocity_mph,
+        average_launch_angle_deg=report.average_launch_angle_deg,
+        sweet_spot_count=report.sweet_spot_count,
+        sweet_spot_rate=report.sweet_spot_rate,
+        groups=[
+            schemas.PitchGroupSplitOut(
+                group=g.group.value,
+                label=g.group.label,
+                seen=g.seen,
+                swings=g.swings,
+                whiffs=g.whiffs,
+                whiff_rate=g.whiff_rate,
+                batted_balls=g.batted_balls,
+                average_pitch_velocity_mph=g.average_pitch_velocity_mph,
+                average_exit_velocity_mph=g.average_exit_velocity_mph,
+                best_exit_velocity_mph=g.best_exit_velocity_mph,
+                enough_to_judge=g.has_enough_swings_to_judge,
+            )
+            for g in report.groups
+        ],
+        contact=contact,
+        insights=[
+            schemas.InsightOut(kind=i.kind.value, headline=i.headline, detail=i.detail)
+            for i in report.insights
+        ],
+        videos=[
+            schemas.SessionVideoOut(
+                id=v.id,
+                title=v.title,
+                url=v.url,
+                external_event_id=v.external_event_id,
+                note=v.note,
+            )
+            for v in result.videos
+        ],
+    )
+
+
 __all__ = [
+    "hitting_report",
     "import_detail",
     "import_out",
     "import_result",

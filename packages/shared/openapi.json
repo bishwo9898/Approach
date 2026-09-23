@@ -1,6 +1,52 @@
 {
   "components": {
     "schemas": {
+      "AddSessionVideoIn": {
+        "properties": {
+          "external_event_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Event Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "url"
+        ],
+        "title": "AddSessionVideoIn",
+        "type": "object"
+      },
       "Aggregation": {
         "enum": [
           "MAX",
@@ -12,6 +58,48 @@
         ],
         "title": "Aggregation",
         "type": "string"
+      },
+      "BattedBallOut": {
+        "properties": {
+          "event_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Number"
+          },
+          "exit_velocity_mph": {
+            "title": "Exit Velocity Mph",
+            "type": "number"
+          },
+          "in_sweet_spot": {
+            "title": "In Sweet Spot",
+            "type": "boolean"
+          },
+          "launch_angle_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Launch Angle Deg"
+          }
+        },
+        "required": [
+          "event_number",
+          "exit_velocity_mph",
+          "launch_angle_deg",
+          "in_sweet_spot"
+        ],
+        "title": "BattedBallOut",
+        "type": "object"
       },
       "Body_upload_trackman_csv_api_v1_imports_trackman_csv_post": {
         "properties": {
@@ -211,6 +299,255 @@
           "database_target"
         ],
         "title": "HealthOut",
+        "type": "object"
+      },
+      "HittingSessionReportOut": {
+        "properties": {
+          "average_exit_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Exit Velocity Mph"
+          },
+          "average_launch_angle_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Launch Angle Deg"
+          },
+          "batted_balls": {
+            "title": "Batted Balls",
+            "type": "integer"
+          },
+          "best_exit_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Exit Velocity Mph"
+          },
+          "contact": {
+            "items": {
+              "$ref": "#/components/schemas/BattedBallOut"
+            },
+            "title": "Contact",
+            "type": "array"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/PitchGroupSplitOut"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "insights": {
+            "items": {
+              "$ref": "#/components/schemas/InsightOut"
+            },
+            "title": "Insights",
+            "type": "array"
+          },
+          "opponent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opponent Name"
+          },
+          "pitches_faced": {
+            "title": "Pitches Faced",
+            "type": "integer"
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerSummary"
+          },
+          "session_date": {
+            "format": "date",
+            "title": "Session Date",
+            "type": "string"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "session_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Type"
+          },
+          "sweet_spot_count": {
+            "title": "Sweet Spot Count",
+            "type": "integer"
+          },
+          "sweet_spot_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sweet Spot Rate"
+          },
+          "swing_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Swing Rate"
+          },
+          "swings": {
+            "title": "Swings",
+            "type": "integer"
+          },
+          "taken": {
+            "title": "Taken",
+            "type": "integer"
+          },
+          "videos": {
+            "items": {
+              "$ref": "#/components/schemas/SessionVideoOut"
+            },
+            "title": "Videos",
+            "type": "array"
+          },
+          "whiff_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whiff Rate"
+          },
+          "whiffs": {
+            "title": "Whiffs",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "player",
+          "session_id",
+          "session_date",
+          "session_type",
+          "opponent_name",
+          "pitches_faced",
+          "taken",
+          "swings",
+          "whiffs",
+          "whiff_rate",
+          "swing_rate",
+          "batted_balls",
+          "best_exit_velocity_mph",
+          "average_exit_velocity_mph",
+          "average_launch_angle_deg",
+          "sweet_spot_count",
+          "sweet_spot_rate",
+          "groups",
+          "contact",
+          "insights",
+          "videos"
+        ],
+        "title": "HittingSessionReportOut",
+        "type": "object"
+      },
+      "HittingSessionSummaryOut": {
+        "description": "One line per session, for choosing which report to open.",
+        "properties": {
+          "batted_balls": {
+            "title": "Batted Balls",
+            "type": "integer"
+          },
+          "best_exit_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Exit Velocity Mph"
+          },
+          "opponent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opponent Name"
+          },
+          "pitches_faced": {
+            "title": "Pitches Faced",
+            "type": "integer"
+          },
+          "session_date": {
+            "format": "date",
+            "title": "Session Date",
+            "type": "string"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "session_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Type"
+          }
+        },
+        "required": [
+          "session_id",
+          "session_date",
+          "session_type",
+          "opponent_name",
+          "pitches_faced",
+          "batted_balls",
+          "best_exit_velocity_mph"
+        ],
+        "title": "HittingSessionSummaryOut",
         "type": "object"
       },
       "ImportDetailOut": {
@@ -569,6 +906,29 @@
         ],
         "title": "ImportStatus",
         "type": "string"
+      },
+      "InsightOut": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "headline": {
+            "title": "Headline",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "headline",
+          "detail"
+        ],
+        "title": "InsightOut",
+        "type": "object"
       },
       "IntegrationHealthOut": {
         "properties": {
@@ -1101,6 +1461,97 @@
         "title": "PersonalRecordOut",
         "type": "object"
       },
+      "PitchGroupSplitOut": {
+        "properties": {
+          "average_exit_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Exit Velocity Mph"
+          },
+          "average_pitch_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Pitch Velocity Mph"
+          },
+          "batted_balls": {
+            "title": "Batted Balls",
+            "type": "integer"
+          },
+          "best_exit_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Exit Velocity Mph"
+          },
+          "enough_to_judge": {
+            "title": "Enough To Judge",
+            "type": "boolean"
+          },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "seen": {
+            "title": "Seen",
+            "type": "integer"
+          },
+          "swings": {
+            "title": "Swings",
+            "type": "integer"
+          },
+          "whiff_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whiff Rate"
+          },
+          "whiffs": {
+            "title": "Whiffs",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "group",
+          "label",
+          "seen",
+          "swings",
+          "whiffs",
+          "whiff_rate",
+          "batted_balls",
+          "average_pitch_velocity_mph",
+          "average_exit_velocity_mph",
+          "best_exit_velocity_mph",
+          "enough_to_judge"
+        ],
+        "title": "PitchGroupSplitOut",
+        "type": "object"
+      },
       "PlayerOverviewOut": {
         "properties": {
           "last_session": {
@@ -1389,6 +1840,54 @@
           "source_status"
         ],
         "title": "SessionOut",
+        "type": "object"
+      },
+      "SessionVideoOut": {
+        "properties": {
+          "external_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Event Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "url",
+          "external_event_id",
+          "note"
+        ],
+        "title": "SessionVideoOut",
         "type": "object"
       },
       "SourceStatus": {
@@ -2026,6 +2525,96 @@
         ]
       }
     },
+    "/api/v1/me/hitting/latest": {
+      "get": {
+        "description": "The athlete's most recent batting session.\n\nThe player dashboard opens straight to this -- there is nothing to choose\nfrom until they have batted more than once.",
+        "operationId": "my_latest_session_api_v1_me_hitting_latest_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HittingSessionReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Latest Session",
+        "tags": [
+          "hitting"
+        ]
+      }
+    },
+    "/api/v1/me/hitting/sessions": {
+      "get": {
+        "operationId": "my_hitting_sessions_api_v1_me_hitting_sessions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HittingSessionSummaryOut"
+                  },
+                  "title": "Response My Hitting Sessions Api V1 Me Hitting Sessions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Hitting Sessions",
+        "tags": [
+          "hitting"
+        ]
+      }
+    },
+    "/api/v1/me/hitting/sessions/{session_id}": {
+      "get": {
+        "operationId": "my_session_api_v1_me_hitting_sessions__session_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HittingSessionReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Session",
+        "tags": [
+          "hitting"
+        ]
+      }
+    },
     "/api/v1/me/overview": {
       "get": {
         "operationId": "my_overview_api_v1_me_overview_get",
@@ -2346,6 +2935,213 @@
         "summary": "Get Player",
         "tags": [
           "players"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}/hitting/latest": {
+      "get": {
+        "operationId": "latest_hitting_session_api_v1_players__player_id__hitting_latest_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HittingSessionReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Latest Hitting Session",
+        "tags": [
+          "hitting"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}/hitting/sessions": {
+      "get": {
+        "operationId": "hitting_sessions_api_v1_players__player_id__hitting_sessions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HittingSessionSummaryOut"
+                  },
+                  "title": "Response Hitting Sessions Api V1 Players  Player Id  Hitting Sessions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Hitting Sessions",
+        "tags": [
+          "hitting"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}/hitting/sessions/{session_id}": {
+      "get": {
+        "operationId": "hitting_session_api_v1_players__player_id__hitting_sessions__session_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HittingSessionReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Hitting Session",
+        "tags": [
+          "hitting"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}/hitting/sessions/{session_id}/videos": {
+      "post": {
+        "description": "Attach a video of this athlete's session.\n\nAdmin-only, and the link must be http(s) -- this is rendered on a page shown\nto a minor, so an unchecked URL would be a stored scripting hole.",
+        "operationId": "add_video_api_v1_players__player_id__hitting_sessions__session_id__videos_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddSessionVideoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionVideoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Video",
+        "tags": [
+          "hitting"
         ]
       }
     },

@@ -142,6 +142,8 @@ def test_player_cannot_read_another_athlete_by_changing_the_url(client, roster) 
         f"/api/v1/players/{other.id}/sessions",
         f"/api/v1/players/{other.id}/metrics/pitch.fastball.max_velocity/series",
         f"/api/v1/players/{other.id}/prs/pitch.fastball.max_velocity/history",
+        f"/api/v1/players/{other.id}/hitting/latest",
+        f"/api/v1/players/{other.id}/hitting/sessions",
     ):
         assert client.get(path, headers=auth("dev|p1")).status_code == 404, path
 
