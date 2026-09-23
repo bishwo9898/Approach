@@ -40,11 +40,11 @@ from bsa.services.ingestion import IngestionService
 ORG_SLUG = "approach-baseball"
 ORG_NAME = "Approach Baseball Performance"
 
-# Fixed development logins. The suppressions are deliberate: these are
-# identities, not credentials -- the development auth provider treats the token
-# as the subject and refuses to run in production. See bsa.integrations.auth.dev.
-COACH_TOKEN = "dev|coach"  # noqa: S105
-PLAYER_TOKEN = "dev|player"  # noqa: S105
+#: The two roles the app is used as. The passcode provider resolves a passcode
+#: to one of these, so these are the user subjects -- not the passcodes, which
+#: live in configuration and never in the repository.
+COACH_SUBJECT = "coach"
+PLAYER_SUBJECT = "player"
 
 
 def athlete_name_in(path: Path) -> str:
@@ -132,10 +132,11 @@ def ensure_athlete(db: Session, org: Organization, display_name: str) -> Player:
 
 
 def ensure_users(db: Session, org: Organization, athlete: Player) -> None:
+    provider = get_settings().auth_provider
     wanted = [
-        (COACH_TOKEN, "coach@approach.test", "Coach", Role.COACH, None),
+        (COACH_SUBJECT, "coach@approach.test", "Coach", Role.COACH, None),
         (
-            PLAYER_TOKEN,
+            PLAYER_SUBJECT,
             "player@approach.test",
             athlete.display_name,
             Role.PLAYER,
@@ -144,7 +145,7 @@ def ensure_users(db: Session, org: Organization, athlete: Player) -> None:
     ]
     for subject, email, name, role, player_id in wanted:
         existing = db.scalars(
-            select(User).where(User.auth_provider == "dev", User.auth_subject == subject)
+            select(User).where(User.auth_provider == provider, User.auth_subject == subject)
         ).first()
         if existing is not None:
             # Keep the link current if the athlete row was recreated.
@@ -154,7 +155,7 @@ def ensure_users(db: Session, org: Organization, athlete: Player) -> None:
         db.add(
             User(
                 organization_id=org.id,
-                auth_provider="dev",
+                auth_provider=provider,
                 auth_subject=subject,
                 email=email,
                 display_name=name,
@@ -214,9 +215,10 @@ def main() -> int:
     print(f"    events      {outcome.pitch_events} pitches, {outcome.hit_events} hits")
     if outcome.unresolved_players:
         print(f"    UNRESOLVED  {', '.join(outcome.unresolved_players)}")
-    print("\n  Sign in with:")
-    print(f"    Coach       {COACH_TOKEN}")
-    print(f"    Player      {PLAYER_TOKEN}   ({athlete_label})")
+    settings = get_settings()
+    print("\n  Sign in at http://localhost:3000 with these passcodes:")
+    print(f"    Coach       {settings.coach_passcode}")
+    print(f"    Player      {settings.player_passcode}   ({athlete_label})")
     print()
     return 0
 

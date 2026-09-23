@@ -14,6 +14,12 @@ def get_auth_provider(settings: Settings) -> AuthProvider:
     kind = settings.auth_provider.lower()
     if kind == "dev":
         return DevAuthProvider()
+    if kind == "passcode":
+        from bsa.integrations.auth.passcode import PasscodeAuthProvider
+
+        return PasscodeAuthProvider(
+            {"coach": settings.coach_passcode, "player": settings.player_passcode}
+        )
     if kind == "clerk":
         from bsa.integrations.auth.clerk import ClerkAuthProvider
 

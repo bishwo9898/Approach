@@ -29,7 +29,7 @@ async function globalSetup(config: FullConfig): Promise<void> {
   }
 
   const me = await fetch(`${apiBase}/api/v1/me`, {
-    headers: { Authorization: "Bearer dev|coach" },
+    headers: { Authorization: `Bearer ${process.env.E2E_COACH_PASSCODE ?? "coach"}` },
   }).catch(() => null);
   if (!me?.ok) {
     throw new Error(
@@ -41,7 +41,7 @@ async function globalSetup(config: FullConfig): Promise<void> {
   // The reports need a real session behind them, and an empty database would
   // fail every test with a timeout rather than a reason.
   const report = await fetch(`${apiBase}/api/v1/me/hitting/latest`, {
-    headers: { Authorization: "Bearer dev|player" },
+    headers: { Authorization: `Bearer ${process.env.E2E_PLAYER_PASSCODE ?? "player"}` },
   }).catch(() => null);
   if (!report?.ok) {
     throw new Error("No batting session is loaded. Run seed_athlete with a real export.");

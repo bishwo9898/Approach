@@ -44,7 +44,11 @@ class Settings(BaseSettings):
     object_store_local_root: Path = Path("./var/objectstore")
     gcs_bucket: str | None = None
 
-    auth_provider: str = "dev"
+    auth_provider: str = "passcode"
+    #: Shared passcodes, one per role. Development defaults only -- production
+    #: refuses to start while they are still these values.
+    coach_passcode: str = "coach"
+    player_passcode: str = "player"
     clerk_jwks_url: str | None = None
     clerk_issuer: str | None = None
     clerk_audience: str | None = None
@@ -73,6 +77,21 @@ class Settings(BaseSettings):
                     "BSA_AUTH_PROVIDER=dev is refused in production: "
                     "dev auth trusts static seeded tokens."
                 )
+            if self.auth_provider == "passcode":
+                # A deployment must never inherit the development passcodes.
+                weak = {
+                    name
+                    for name, value in (
+                        ("BSA_COACH_PASSCODE", self.coach_passcode),
+                        ("BSA_PLAYER_PASSCODE", self.player_passcode),
+                    )
+                    if value in ("coach", "player") or len(value) < 8
+                }
+                if weak:
+                    raise ValueError(
+                        f"{', '.join(sorted(weak))} must be set to a value of at "
+                        "least 8 characters in production."
+                    )
             if self.object_store_backend == "local":
                 raise ValueError(
                     "BSA_OBJECT_STORE_BACKEND=local is refused in production: "

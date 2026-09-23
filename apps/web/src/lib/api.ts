@@ -46,6 +46,18 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 
+  /**
+   * The request never reached the API.
+   *
+   * Status 0 is reserved for this. It matters because a hosted API on a
+   * free tier sleeps and takes the better part of a minute to wake -- the
+   * difference between "wrong passcode" and "server is waking up" is the
+   * difference between a user retyping forever and waiting ten seconds.
+   */
+  get isUnreachable(): boolean {
+    return this.status === 0;
+  }
+
   /** The caller is not signed in, or their credential is no longer valid. */
   get isUnauthenticated(): boolean {
     return this.status === 401;
@@ -62,11 +74,18 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+      cache: "no-store",
+    });
+  } catch {
+    // fetch rejects only when the request never completed: the API is down,
+    // asleep, or blocked by CORS. Never a credential problem.
+    throw new ApiError(0, "unreachable", "Could not reach the server.");
+  }
 
   if (!response.ok) {
     let code = "http_error";

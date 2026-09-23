@@ -48,3 +48,40 @@ def test_database_target_handles_an_unparseable_url() -> None:
 
     # And credentials are stripped wherever a host does parse.
     assert Settings(database_url="postgresql://u:pw@h:1/d").database_target == "h:1/d"
+
+
+def test_production_refuses_development_passcodes() -> None:
+    """A deployment must never inherit the passcodes from the README."""
+    import pytest
+
+    from bsa.core.config import Settings
+
+    for coach, player in (
+        ("coach", "player"),
+        ("aVeryLongOne", "player"),
+        ("short", "alsoShort"),
+    ):
+        with pytest.raises(ValueError, match="at least 8 characters"):
+            Settings(
+                env="production",
+                auth_provider="passcode",
+                coach_passcode=coach,
+                player_passcode=player,
+                object_store_backend="gcs",
+                gcs_bucket="bucket",
+            )
+
+
+def test_production_accepts_real_passcodes() -> None:
+    from bsa.core.config import Settings
+
+    settings = Settings(
+        env="production",
+        auth_provider="passcode",
+        coach_passcode="a-long-enough-coach-passcode",
+        player_passcode="a-long-enough-player-passcode",
+        object_store_backend="gcs",
+        gcs_bucket="bucket",
+    )
+
+    assert settings.auth_provider == "passcode"
