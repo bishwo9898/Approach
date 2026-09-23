@@ -27,6 +27,13 @@ test-results/
 *.key
 service-account*.json
 
+# Real athlete data. NEVER committed -- this repository is public.
+# Synthetic fixtures for development live in samples/trackman/ instead.
+/CSV files/
+/SS/
+*.mp4
+*.mov
+
 # Real TrackMan exports. Never committed -- they contain real athlete data.
 /imports/*
 !/imports/README.md
