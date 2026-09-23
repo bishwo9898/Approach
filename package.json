@@ -8,5 +8,11 @@
     "web:lint": "pnpm --filter @bsa/web lint",
     "web:typecheck": "pnpm --filter @bsa/web typecheck",
     "web:test": "pnpm --filter @bsa/web test"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "unrs-resolver"
+    ]
   }
 }

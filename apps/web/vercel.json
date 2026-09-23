@@ -1,9 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "pnpm --filter @bsa/web build",
+
+  "// Root Directory": "Set this project's Root Directory to apps/web in Vercel. Every path below is resolved relative to it, which is why there is no outputDirectory: Next's default .next is already correct. Setting it to apps/web/.next looks right but resolves to apps/web/apps/web/.next.",
+
+  "// installCommand": "Run from apps/web. pnpm walks up to the workspace root on its own, so the API's sibling package is resolved without naming it here.",
   "installCommand": "pnpm install --frozen-lockfile",
-  "outputDirectory": "apps/web/.next",
+  "buildCommand": "pnpm build",
+
   "headers": [
     {
       "source": "/(.*)",

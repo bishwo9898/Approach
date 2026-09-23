@@ -62,6 +62,12 @@ Re-run it with each new export; ingestion is idempotent.
 
 1. vercel.com → **Add New → Project** → import the repository.
 2. Set **Root Directory** to `apps/web`.
+
+   > Every path in `apps/web/vercel.json` is resolved relative to this, which
+   > is why it sets no `outputDirectory` — Next's default `.next` is already
+   > correct. Setting it to `apps/web/.next` looks right and resolves to
+   > `apps/web/apps/web/.next`, which fails *after* a successful build with
+   > "The Next.js output directory was not found".
 3. Add one environment variable:
 
    | Name | Value |
