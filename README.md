@@ -7,23 +7,31 @@ personal records, and gives coaches and athletes dashboards over it.
 **This application is the analytical source of truth.** TrackMan is a data
 source; The Futures App is a destination. Both sit behind adapters.
 
-> All data in this repository is **synthetic**. No real athlete data and no
-> vendor credentials are present anywhere, including in tests.
+> No real athlete data is **in this repository**. Real exports live in
+> `CSV files/` and `imports/`, both gitignored; every fixture and test uses
+> invented athletes. No vendor credentials are present anywhere.
 
-## Status — Phase 1 complete
+## Status
+
+Running on one real athlete's live at-bat session — 66 pitches faced, 16 batted
+balls measured. The athlete is loaded from their export; their name is not in
+this repository.
 
 | | |
 |---|---|
-| TrackMan CSV ingestion | Working, idempotent, against a **synthetic** schema |
+| Live at-bat ingestion | **Working on real TrackMan exports** |
+| Hitting session report | Contact quality, swing decisions, insights, video |
+| Roles | Coach and Player. A player reaches only their own data. |
+| TrackMan session CSV | Working, idempotent, against a **synthetic** schema |
 | Metrics engine | Configurable definitions, 11 starter metrics |
 | PR engine | Derived progression, handles verified corrections |
 | Preliminary → verified reconciliation | Working |
-| Coach dashboard | Today, PR feed, search, player page, data health |
-| Player dashboard | Self-scoped, server-enforced |
+| Coach view | Athlete list, session report, data health |
+| Player view | Their own session report, server-enforced |
 | Identity resolution | Map an unknown athlete; their held data is recovered automatically |
-| Futures sync | Manual worklist (no supported API confirmed) |
-| Auth | Dev provider; Clerk interface ready, refused in production |
-| Tests | 112 backend, 28 frontend, 7 end-to-end |
+| Futures sync | Backend only — no data behind it yet, so nothing is on screen |
+| Auth | Fixed development accounts; Clerk interface ready, refused in production |
+| Tests | 151 backend, 29 frontend, 5 end-to-end |
 
 ## Quick start
 
@@ -90,34 +98,60 @@ need to keep working in the meantime, use the native setup above.
 
 </details>
 
-## When your real TrackMan data arrives
-
-Three steps, in order.
-
-**1. See what the file contains.** This reads only; it writes nothing.
+## Loading a real TrackMan export
 
 ```bash
-# put the file in ./imports first -- that folder is mounted into the container
-docker compose exec api python -m bsa.scripts.inspect_csv /data/imports/export.csv
+# 1. See what the file contains. Reads only; writes nothing.
+cd apps/api
+.venv/bin/python -m bsa.scripts.inspect_csv "../../CSV files/<athlete>/<export>.csv"
 ```
 
-It lists every column, flags the ones that look like fields we need, and tells
-you whether a known schema matches. If one does, skip to step 3.
+If it reports a matching schema, import it from **Data Health → Import a
+TrackMan export**. If it does not, add a `ColumnMap` in
+`apps/api/src/bsa/integrations/trackman/mapping.py` using the column names it
+printed — nothing outside that file changes.
 
-**2. Add the real column names.** If no schema matched, add a `ColumnMap` in
-`apps/api/src/bsa/integrations/trackman/mapping.py` using the names from step 1,
-and register it in `COLUMN_MAPS`. Nothing outside that one file changes.
+Athletes the export names but we do not recognize are **held, never guessed at**.
+They appear under *Athlete mapping required*, where you map them to an existing
+athlete or create one on the spot; their held sessions are then reprocessed and
+attributed automatically.
 
-**3. Import it.** Data Health → *Import a TrackMan export*. Then:
+> Real exports live in `CSV files/` and `imports/`, both gitignored. They contain
+> real athlete data and must never be committed. `samples/trackman/` holds the
+> synthetic fixtures that do belong in the repository.
 
-- Athletes we do not recognize appear under **Athlete mapping required**. Map
-  each to an existing athlete, or create a new one right there — the form is
-  pre-filled from the name TrackMan reported. Their held sessions are
-  reprocessed and attributed automatically.
-- **Import history** shows any rejected rows and why.
-- Metrics, personal records and the dashboards follow on their own.
+### Loading an athlete
 
-Re-importing the same file is always safe; it is detected and does nothing.
+```bash
+cd apps/api
+.venv/bin/python -m bsa.scripts.seed_athlete "../../CSV files/<athlete>/<export>.csv"
+```
+
+This reads the athlete from the export, registers their TrackMan identity, and
+ingests the session. Then sign in at http://localhost:3000 as **Coach** or
+**Player** — the player account is linked to whichever athlete you loaded.
+
+Re-run it with the next athlete's export as more data arrives; no code changes.
+
+## What the app shows today
+
+Only what the data supports. A live at-bat export measures four things
+reliably — the pitch, whether the batter swung, whether they hit it, and how
+hard and at what angle — so the athlete's page is built from exactly those:
+
+| | |
+|---|---|
+| Hardest ball / typical ball | best and average exit velocity, with the count behind them |
+| Line-drive window | share of batted balls between 8° and 32° |
+| Swings that missed | whiff rate, with the number of swings |
+| What this session says | strengths and things to work on, each guarded by a sample size |
+| Every ball put in play | exit velocity against launch angle, plus the full list |
+| How you handled each pitch | fastball vs breaking, grouped by measured movement |
+| Video | clips a coach attaches, tied to the pitch they show |
+
+Nothing else is on screen. Metrics, personal records and multi-session trends
+exist in the backend and are tested, but they need more than one session before
+they mean anything, so they are not displayed yet.
 
 ## Repository layout
 

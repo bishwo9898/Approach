@@ -310,6 +310,83 @@ message when unavailable rather than failing confusingly.
 
 ---
 
+## 22. A vendor that names athletes but does not id them
+
+**Decision.** The live at-bat export carries names and no athlete ids. The
+normalized name (`name:mateo-rivera`) is treated as the *vendor's* identity
+string and still goes through the resolution queue for a human to map once.
+
+**Why.** The rule is that athletes are never identified by name, and this does
+not break it: nothing auto-matches, a person still makes the mapping, and the
+uniqueness constraint still makes it impossible for one string to point at two
+athletes. What changes is only what the vendor happens to use as its key.
+
+**Watch for.** Two athletes with the same name at one facility would collide on
+one identity string. The queue surfaces the vendor's display name, so a human
+would see it -- but if it happens, that athlete needs a disambiguated entry.
+
+---
+
+## 23. A pitch belongs to its batter as well as its pitcher
+
+**Decision.** `pitch_events.player_id` (the pitcher) became nullable and a
+`batter_id` was added, with a CHECK that at least one is set.
+
+**Why.** A live at-bat is about the hitter, and the opposing pitcher is usually
+someone the facility does not roster. Requiring a pitcher would have meant
+either inventing a player for every opponent or discarding the hitter's session.
+The check constraint keeps the thing that actually mattered: a tracked pitch
+always belongs to somebody.
+
+---
+
+## 24. Swing results are read from the export's marker shapes
+
+**Decision.** `square`, `crossed_circle` and `circle` are mapped to in-play,
+swing-and-miss and taken.
+
+**Why.** The export has no result column, but the shapes separate perfectly
+against a measurement that cannot lie: across 66 pitches, circles never carried
+a batted ball (0/32), crossed circles almost never (1/13), squares usually did
+(15/21). Swing decisions are the most useful thing in the file and would
+otherwise be thrown away.
+
+**Would change if.** A real export ever shows a shape we do not know -- that row
+records an issue and stores no swing result rather than guessing.
+
+---
+
+## 25. The session report is purpose-built, not driven by the metrics engine
+
+**Decision.** `domain/hitting_report.py` computes the athlete's session view
+directly, rather than defining hitting metrics in `metric_definitions`.
+
+**Why.** They answer different questions. The metrics engine tracks a
+coach-chosen number across sessions; the report explains one session to the
+athlete who batted in it, including things the engine has no concept of --
+swing decisions, sample-size caveats, and prose. Forcing the report through the
+engine would have meant a new event source and several metrics that exist only
+to be reassembled into sentences.
+
+**Both stay.** The engine is what turns one session into a trend once there are
+several. It is simply not what today's data supports showing.
+
+---
+
+## 26. The frontend shows only what the data supports
+
+**Decision.** Progression charts, the PR feed, headline metric cards and the
+Futures worklist were removed from the UI. The backend that produces them is
+untouched and still tested.
+
+**Why.** With one session, a progression chart has one point, every number is a
+personal record, and the Futures queue is empty. Screens like that are not
+neutral -- they teach the reader that the app is mostly empty, and they hide the
+one page that is worth reading. They come back as the data arrives; git history
+has them.
+
+---
+
 ## Open assumptions to confirm with the facility
 
 1. **Metric set.** The eleven starter metrics are a scaffold, not a
