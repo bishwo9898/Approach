@@ -254,8 +254,13 @@ class IngestionService:
         pitch_rows = []
         kept_pitch_ids: set[str] = set()
         for pitch in parsed.pitches:
-            player_id = resolved.get(pitch.external_player_id)
-            if player_id is None:
+            pitcher_id = (
+                resolved.get(pitch.external_player_id) if pitch.external_player_id else None
+            )
+            batter_id = resolved.get(pitch.external_batter_id) if pitch.external_batter_id else None
+            # Held only when neither athlete on the row is one of ours. A live
+            # at-bat against an opposing pitcher still belongs to our hitter.
+            if pitcher_id is None and batter_id is None:
                 continue
             kept_pitch_ids.add(pitch.external_event_id)
             pitch_rows.append(
@@ -263,7 +268,9 @@ class IngestionService:
                     "id": uuid.uuid4(),
                     "organization_id": self.organization.id,
                     "session_id": session.id,
-                    "player_id": player_id,
+                    "player_id": pitcher_id,
+                    "batter_id": batter_id,
+                    "swing_result": pitch.swing_result,
                     "external_event_id": pitch.external_event_id,
                     "pitch_number": pitch.pitch_number,
                     "event_at": pitch.event_at,
@@ -395,12 +402,18 @@ class IngestionService:
         """
         names: dict[str, str | None] = {}
         occurrences: dict[str, int] = {}
+
+        def note(external_id: str | None, display_name: str | None) -> None:
+            if not external_id:
+                return
+            names.setdefault(external_id, display_name)
+            occurrences[external_id] = occurrences.get(external_id, 0) + 1
+
         for pitch in parsed.pitches:
-            names.setdefault(pitch.external_player_id, pitch.external_player_name)
-            occurrences[pitch.external_player_id] = occurrences.get(pitch.external_player_id, 0) + 1
+            note(pitch.external_player_id, pitch.external_player_name)
+            note(pitch.external_batter_id, pitch.external_batter_name)
         for hit in parsed.hits:
-            names.setdefault(hit.external_player_id, hit.external_player_name)
-            occurrences[hit.external_player_id] = occurrences.get(hit.external_player_id, 0) + 1
+            note(hit.external_player_id, hit.external_player_name)
 
         resolved: dict[str, uuid.UUID] = {}
         unresolved: set[str] = set()

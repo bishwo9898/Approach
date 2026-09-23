@@ -26,6 +26,7 @@ from bsa.core.logging import get_logger
 from bsa.core.units import UnitConversionError, convert
 from bsa.domain.enums import ImportIssueCode, SourceStatus
 from bsa.domain.vocabulary import STRIKE_CALLS, PitchCall
+from bsa.integrations.trackman import live_atbat
 from bsa.integrations.trackman.mapping import (
     ColumnMap,
     NumericColumn,
@@ -118,8 +119,10 @@ class TrackmanCsvProvider:
 
     name = "trackman"
 
-    def __init__(self, source_dir: Path | None = None) -> None:
+    def __init__(self, source_dir: Path | None = None, *, today: date | None = None) -> None:
         self.source_dir = Path(source_dir) if source_dir else None
+        #: Overridable so a test can pin the date used to infer a missing year.
+        self._today = today
 
     # -- discovery / retrieval ------------------------------------------------
 
@@ -153,6 +156,12 @@ class TrackmanCsvProvider:
                 RowIssue(0, ImportIssueCode.SCHEMA_UNKNOWN, "file has no header row")
             )
             return result
+
+        # A live at-bat export is a different report from the same vendor, with
+        # its own parser. Checked first because it shares no columns with the
+        # session schemas and would otherwise fail detection.
+        if live_atbat.matches(list(reader.fieldnames)):
+            return live_atbat.parse(text, today=self._today or date.today())
 
         try:
             column_map = detect_schema(list(reader.fieldnames))

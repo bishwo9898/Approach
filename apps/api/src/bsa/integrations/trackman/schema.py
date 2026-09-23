@@ -35,8 +35,17 @@ class RowIssue:
 @dataclass(slots=True)
 class ParsedPitch:
     external_event_id: str
-    external_player_id: str
+    #: The pitcher's vendor identity. None when the export does not name a
+    #: pitcher we could roster -- machine work, or an opposing pitcher.
+    external_player_id: str | None
     external_player_name: str | None = None
+
+    #: The batter who faced this pitch. A live at-bat export is about the
+    #: hitter, so this is often the only rostered athlete on the row.
+    external_batter_id: str | None = None
+    external_batter_name: str | None = None
+    #: What the batter did with it: TAKEN, SWING_MISS or IN_PLAY.
+    swing_result: str | None = None
     pitch_number: int | None = None
     event_at: datetime | None = None
 

@@ -183,10 +183,16 @@ def player_ids_in_session(db: Session, session_id: uuid.UUID) -> set[uuid.UUID]:
     pitchers = db.scalars(
         select(PitchEvent.player_id).where(PitchEvent.session_id == session_id).distinct()
     )
-    batters = db.scalars(
+    # Batters appear on pitch rows too: in a live at-bat the hitter is often the
+    # only rostered athlete on the row, and missing them here would leave them
+    # out of metric and record recalculation entirely.
+    faced = db.scalars(
+        select(PitchEvent.batter_id).where(PitchEvent.session_id == session_id).distinct()
+    )
+    hitters = db.scalars(
         select(HitEvent.player_id).where(HitEvent.session_id == session_id).distinct()
     )
-    return set(pitchers) | set(batters)
+    return {p for p in (*pitchers, *faced, *hitters) if p is not None}
 
 
 def _event_dicts(

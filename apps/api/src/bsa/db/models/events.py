@@ -15,12 +15,19 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from bsa.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, enum_column
-from bsa.domain.enums import SourceStatus
+from bsa.domain.enums import SourceStatus, SwingResult
 
 
 class PitchEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -35,6 +42,13 @@ class PitchEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         Index("ix_pitch_events_org_event_at", "organization_id", "event_at"),
         Index("ix_pitch_events_player_pitch_type", "player_id", "pitch_type"),
         Index("ix_pitch_events_training_context", "training_context", postgresql_using="gin"),
+        Index("ix_pitch_events_batter_event_at", "batter_id", "event_at"),
+        # A tracked pitch with neither a pitcher nor a batter belongs to nobody
+        # and could never be shown to anyone. Refuse it at the database.
+        CheckConstraint(
+            "player_id IS NOT NULL OR batter_id IS NOT NULL",
+            name="has_an_athlete",  # convention prefixes ck_pitch_events_
+        ),
     )
 
     organization_id: Mapped[uuid.UUID] = mapped_column(
@@ -43,9 +57,20 @@ class PitchEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     session_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    #: The pitcher.
-    player_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("players.id", ondelete="CASCADE"), nullable=False, index=True
+    #: The pitcher, when they are one of our athletes. NULL for an opposing
+    #: pitcher we do not roster, and for machine-fed work.
+    player_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    #: The batter who faced this pitch, when they are one of our athletes.
+    #: A live at-bat export is about the hitter, so this is often the only
+    #: rostered athlete on the row.
+    batter_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    #: What the batter did with it. Only set when the source reports it.
+    swing_result: Mapped[SwingResult | None] = mapped_column(
+        enum_column(SwingResult, "swing_result"), nullable=True
     )
 
     external_event_id: Mapped[str] = mapped_column(String(128), nullable=False)

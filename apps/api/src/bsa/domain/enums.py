@@ -57,6 +57,19 @@ class ImportIssueCode(StrEnum):
     AMBIGUOUS_SESSION = "AMBIGUOUS_SESSION"
 
 
+class SwingResult(StrEnum):
+    """What the batter did with a pitch.
+
+    The three outcomes a live at-bat export actually distinguishes. Deliberately
+    not finer-grained: we can tell a take from a swing-and-miss from contact,
+    but not a ball from a called strike, so we do not pretend to.
+    """
+
+    TAKEN = "TAKEN"
+    SWING_MISS = "SWING_MISS"
+    IN_PLAY = "IN_PLAY"
+
+
 class MetricCategory(StrEnum):
     PITCHING = "PITCHING"
     HITTING = "HITTING"
