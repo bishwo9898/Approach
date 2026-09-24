@@ -44,3 +44,4 @@ var/
 
 # OS
 .DS_Store
+.vercel
