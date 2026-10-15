@@ -1,0 +1,4 @@
+# Copy to players.txt (gitignored) for the multi-player milestone.
+# One player per line, spelled exactly as TrackMan's search finds them.
+Jordan Avery
+John Smith

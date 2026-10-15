@@ -1,0 +1,132 @@
+# TrackMan table capture settings.
+# Every tunable value lives here -- you should never need to edit Python to tune a run.
+# Units: "points" are macOS screen points (what the mouse uses). On a Retina display
+# one point is two image pixels.
+
+app:
+  name: TrackMan Baseball Pro
+  bundle_id: dk.trackman.baseball-practice   # used to find and focus the app
+
+output:
+  captures_dir: captures      # relative to this folder
+  logs_dir: logs
+  rosters_dir: rosters        # discovered athlete lists (--list-sessions)
+  image_format: png           # png (lossless, best for Phase 2) or jpg
+
+capture:
+  view: Hit                   # recorded in metadata.json; change with --view
+  max_pages_per_player: 100   # failsafe: never scroll more than this many pages
+  start_from_top: true        # scroll the table to the top before page 1
+
+# The table area to screenshot, relative to the TrackMan window's top-left corner.
+# Do not edit by hand: run  python main.py --pick-region
+# window_width/height record the window size at calibration time; if the window
+# is resized later, the run stops instead of capturing the wrong area.
+# --- region (written by --pick-region) ---
+region:
+  x: 3
+  y: 101
+  width: 1181
+  height: 770
+  window_width: 1193
+  window_height: 923
+# --- end region ---
+
+scroll:
+  unit: pixel                 # pixel (exact) or line (classic mouse-wheel clicks)
+  amount: auto                # auto = target_fraction x region height (pixel unit only),
+                              # or a number of pixels/lines per step
+  target_fraction: 0.70       # how much of the region one step scrolls (0.70 = 30% overlap)
+  invert: false               # set true only if --calibrate-scroll says direction is reversed
+
+timing:                       # seconds
+  start_delay: 3              # countdown so you can take your hand off the mouse
+  wait_after_activate: 1.0    # after bringing TrackMan to the front
+  wait_after_scroll: 0.8      # let TrackMan finish rendering before the screenshot
+  wait_after_click: 0.5       # after every click in a flow
+  wait_after_player_load: 2.0 # after an athlete's data finishes loading
+  type_interval: 0.05         # between characters; TrackMan filters as you type
+  wait_for_text_timeout: 15   # how long a `wait_for_text` step waits before failing
+  ocr_poll_interval: 0.4      # how often it re-reads the screen while waiting
+
+detection:
+  pixel_tolerance: 24               # grey-level difference (0-255) that counts as a real change
+  unchanged_threshold: 0.003        # frames differing in <= 0.3% of pixels are "unchanged"
+  unchanged_frames_required: 2      # consecutive unchanged scrolls before declaring the bottom
+  overlap_mismatch_threshold: 0.005   # real TrackMan matches score ~0.1%, wrong rows 2%+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Everything below is for capturing a whole roster rather than one open table.
+# ─────────────────────────────────────────────────────────────────────────────
+
+history:                      # reading TrackMan's History list
+  max_list_pages: 40          # safety limit on scrolling the list
+  scroll_amount: 300          # points per step; smaller = more overlap
+  unchanged_pages_required: 2 # reads with no new row before the list has ended
+  # What counts as an athlete's name. Strict on purpose: a loose pattern turns
+  # column headings into athletes, and an invented athlete is far harder to
+  # notice than a missing one. Loosen it only if real names are being skipped.
+  name_pattern: "^[A-Z][A-Za-z'’-]+(?:\\s+[A-Z][A-Za-z'’.-]+)+$"
+  # An athlete id. A row showing one of these but no readable name means the
+  # name was not read -- the run says so rather than quietly skipping them.
+  id_pattern: "TMBB[-\\s]?\\d{4,}"
+
+# Click points and readable areas, in points relative to the TrackMan window's
+# top-left corner. Do not edit by hand: run  python main.py --pick-ui
+# Check them without clicking:        python main.py --verify-ui
+# The names below declare which controls the flows may refer to; --pick-ui
+# fills in their coordinates. A target left at 0,0 is simply not calibrated
+# yet, and any flow that needs it says so instead of clicking the window
+# corner.
+# --- ui (written by --pick-ui) ---
+ui:
+  targets:
+    history_button: {x: 0, y: 0}        # opens the History panel
+    player_filter: {x: 0, y: 0}         # the "All players" dropdown
+    player_search: {x: 0, y: 0}         # its search field
+    player_first_result: {x: 0, y: 0}   # the first name under the search field
+    hit_tab: {x: 0, y: 0}               # the Hit view
+    table_tab: {x: 0, y: 0}             # the Table view inside Hit
+  areas:
+    session_list: {x: 0, y: 0, width: 0, height: 0}   # the History rows, for reading
+# --- end ui ---
+
+# How to get around TrackMan, as steps. Actions:
+#
+#   click: <ui target>             type: "text, {player} is substituted"
+#   press: enter|escape|tab|up|down
+#   wait: <seconds>                wait_for_text: "<regex to wait for>"
+#   scroll: {area: <ui area>, amount: <points>, direction: down|up}
+#
+# Prefer `wait_for_text` over `wait`. A fixed sleep is either too short (it
+# clicks a screen that has not loaded) or too long (a roster of forty takes an
+# hour). Waiting for the text that proves the screen arrived is both faster and
+# more reliable.
+#
+# These are a starting point, not gospel: adjust them to match your TrackMan
+# before running --capture-range. {player_regex} is the athlete's name with
+# regex characters escaped, for use in wait_for_text.
+flows:
+  open_history:
+    - click: history_button
+    - wait_for_text: "HISTORY"
+
+  select_player:
+    - click: player_filter
+    - wait: 0.4
+    - click: player_search
+    - type: "{player}"
+    - wait: 0.8
+    - click: player_first_result
+    - wait_for_text: "{player_regex}"
+
+  open_hit_table:
+    - click: hit_tab
+    - wait: 0.5
+    - click: table_tab
+    - wait_for_text: "EXIT SPEED"
+
+  # Runs before each athlete, to get back to a known screen. Leave empty if
+  # selecting an athlete already works from wherever the last one finished.
+  reset: []

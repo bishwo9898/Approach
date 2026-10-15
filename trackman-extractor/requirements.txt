@@ -1,0 +1,8 @@
+# Runtime (macOS only). pyautogui pulls in pyobjc-core and pyobjc-framework-Quartz/Cocoa.
+pyautogui>=0.9.54
+pyyaml>=6.0
+pillow>=10.1
+numpy>=1.26
+# macOS's own OCR, used to read the History list and to wait for a screen to
+# load instead of sleeping. Ships with the OS -- no Tesseract, no model files.
+pyobjc-framework-Vision>=10
