@@ -126,7 +126,7 @@ export function HittingPeriodView({ summary }: { summary: HittingPeriodSummary }
             title="Not enough for a trend yet"
             description={
               summary.sessions === 1
-                ? "One session in this period. A second one in a different week is enough to start showing movement — this fills in on its own as sessions are imported."
+                ? `One session in this period. A second one in a different ${summary.grain} is enough to start showing movement — this fills in on its own as sessions are imported.`
                 : `All ${summary.sessions} sessions in this period fall in the same ${summary.grain}, so there is one point rather than a line. A session in another ${summary.grain} starts the trend.`
             }
           />

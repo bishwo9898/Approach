@@ -42,8 +42,10 @@ export function Tile({
             </span>
           ) : null}
         </p>
-        {trend ? <div className="mt-2">{trend}</div> : null}
+        {/* What the number is, then how it moved. The other order reads as
+            though the comparison belongs to the figure above it. */}
         <p className="mt-2 text-[11px] text-muted-foreground">{sub}</p>
+        {trend ? <div className="mt-1">{trend}</div> : null}
       </CardContent>
     </Card>
   );
