@@ -46,6 +46,13 @@ export type MetricComparison = Schemas["MetricComparison"];
 export type MetricSummary = Schemas["MetricSummaryOut"];
 export type MetricSeries = Schemas["MetricSeriesOut"];
 export type MetricSeriesPoint = Schemas["MetricSeriesPointOut"];
+
+// -- performance over a period ----------------------------------------------
+
+/** How an athlete has hit over a window of time, bucketed for the trend. */
+export type HittingPeriodSummary = Schemas["HittingPeriodSummaryOut"];
+export type TrendBucket = Schemas["TrendBucketOut"];
+export type PeriodComparison = Schemas["PeriodComparisonOut"];
 export type PersonalRecord = Schemas["PersonalRecordOut"];
 export type PersonalRecordEvent = Schemas["PersonalRecordEventOut"];
 

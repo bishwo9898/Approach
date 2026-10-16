@@ -240,9 +240,34 @@ hard and at what angle — so the athlete's page is built from exactly those:
 | How you handled each pitch | fastball vs breaking, grouped by measured movement |
 | Video | clips a coach attaches, tied to the pitch they show |
 
-Nothing else is on screen. Metrics, personal records and multi-session trends
-exist in the backend and are tested, but they need more than one session before
-they mean anything, so they are not displayed yet.
+### Over a period
+
+The same page also answers "how is this going", over **Week · Month · Quarter ·
+All time**. The period summary is not a second set of metrics: the server runs
+the *same* report over every pitch in the window, so "hardest ball" means one
+thing everywhere.
+
+| | |
+|---|---|
+| Headline numbers | the four tiles above, for the window, each against the equally-long window before it |
+| Over time | exit velocity per bucket — by day, week or month, chosen from the window's length |
+| How much is behind it | sessions, date span and batted balls, always on screen |
+
+How a window is cut up is derived rather than chosen: thirty daily points is
+mostly empty space for an athlete who trains twice a week, and twelve monthly
+points says nothing about the last fortnight. One control, no wrong combination.
+
+**It is honest about having little data, which is the normal case now.** An
+empty window says "Nothing to show yet" rather than printing zeros; a window
+with one session shows that session's numbers but refuses to draw a trend
+through a single point; and a week with no session stays in the chart as a
+*break in the line*, never as a zero — the athlete did not hit 0 mph, they did
+not bat. Those states are not placeholders to be replaced later: they are the
+view, telling the truth about how much it knows, and they fill in on their own
+as sessions are imported.
+
+Personal records and the metric catalog exist in the backend and are tested,
+but they are not on screen yet.
 
 ## Repository layout
 

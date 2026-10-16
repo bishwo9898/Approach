@@ -20,6 +20,8 @@ from bsa.db.models import (
 from bsa.db.models import (
     PersonalRecordEvent as PrEvent,
 )
+from bsa.domain.analytics import Comparison
+from bsa.domain.progress import PeriodSummary
 from bsa.services.analytics import MetricSummary, PlayerOverview
 from bsa.services.hitting import SessionReport
 from bsa.services.ingestion import ImportOutcome
@@ -318,3 +320,64 @@ __all__ = [
 
 # Re-exported for callers that only need the event type.
 PersonalRecordEventModel = PersonalRecordEvent
+
+
+def _period_comparison(comparison: Comparison) -> schemas.PeriodComparisonOut:
+    return schemas.PeriodComparisonOut(
+        current=comparison.current,
+        previous=comparison.previous,
+        delta=comparison.delta,
+        percent_change=comparison.percent_change,
+        current_sample=comparison.current_sample,
+        previous_sample=comparison.previous_sample,
+    )
+
+
+def hitting_period(player: Player, summary: PeriodSummary) -> schemas.HittingPeriodSummaryOut:
+    """Render a period summary.
+
+    Nothing is coerced to zero on the way out. A window with no sessions sends
+    nulls and `has_data=false`, because "no measurement" and "a measurement of
+    zero" are different claims and the client must be able to tell them apart.
+    """
+    totals = summary.totals
+    return schemas.HittingPeriodSummaryOut(
+        player=player_summary(player),
+        range=summary.time_range,
+        start=summary.window.start,
+        end=summary.window.end,
+        grain=summary.grain.value,
+        grain_label=summary.grain.label,
+        sessions=summary.sessions,
+        first_session=summary.first_session,
+        last_session=summary.last_session,
+        has_data=summary.has_data,
+        has_trend=summary.has_trend,
+        pitches_faced=totals.pitches_faced,
+        swings=totals.swings,
+        whiffs=totals.whiffs,
+        whiff_rate=totals.whiff_rate,
+        batted_balls=totals.batted_balls,
+        best_exit_velocity_mph=totals.best_exit_velocity_mph,
+        average_exit_velocity_mph=totals.average_exit_velocity_mph,
+        sweet_spot_count=totals.sweet_spot_count,
+        sweet_spot_rate=totals.sweet_spot_rate,
+        best_exit_velocity_change=_period_comparison(summary.comparison("best_exit_velocity_mph")),
+        average_exit_velocity_change=_period_comparison(
+            summary.comparison("average_exit_velocity_mph")
+        ),
+        buckets=[
+            schemas.TrendBucketOut(
+                start=bucket.start,
+                end=bucket.end,
+                label=bucket.label,
+                sessions=bucket.sessions,
+                pitches_faced=bucket.pitches_faced,
+                batted_balls=bucket.batted_balls,
+                best_exit_velocity_mph=bucket.best_exit_velocity_mph,
+                average_exit_velocity_mph=bucket.average_exit_velocity_mph,
+                sweet_spot_rate=bucket.sweet_spot_rate,
+            )
+            for bucket in summary.buckets
+        ],
+    )

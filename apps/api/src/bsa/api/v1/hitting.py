@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from bsa.api import mappers, schemas
 from bsa.api.deps import (
@@ -23,6 +23,7 @@ from bsa.api.deps import (
 from bsa.core.errors import NotFoundError
 from bsa.db.models import SessionVideo
 from bsa.db.repositories import hitting as hitting_repo
+from bsa.domain.analytics import TimeRange
 from bsa.services import hitting
 
 router = APIRouter(tags=["hitting"])
@@ -87,6 +88,32 @@ def my_session(
     )
 
 
+@router.get("/me/hitting/summary", response_model=schemas.HittingPeriodSummaryOut)
+def my_period_summary(
+    db: DbSession,
+    principal: CurrentPrincipal,
+    time_range: TimeRange = Query(default=TimeRange.LAST_30, alias="range"),
+) -> schemas.HittingPeriodSummaryOut:
+    """How the athlete has hit over a window, rather than in one session.
+
+    Always answers, including when the window holds nothing. An athlete who has
+    not batted this month gets `has_data=false` and null measurements, not a
+    404 -- the question "how did this month go?" has an answer, and the answer
+    is "you did not bat".
+    """
+    player = current_player(db, principal)
+    return mappers.hitting_period(
+        player,
+        hitting.period_summary(
+            db,
+            principal.organization_id,
+            player,
+            time_range=time_range,
+            timezone_name=principal.organization.timezone,
+        ),
+    )
+
+
 # -- the coach's view of an athlete ------------------------------------------
 
 
@@ -128,6 +155,29 @@ def hitting_session(
     player = authorize_player(db, principal, player_id)
     return mappers.hitting_report(
         hitting.session_report(db, principal.organization_id, player, session_id)
+    )
+
+
+@router.get(
+    "/players/{player_id}/hitting/summary",
+    response_model=schemas.HittingPeriodSummaryOut,
+)
+def hitting_period_summary(
+    player_id: uuid.UUID,
+    db: DbSession,
+    principal: CurrentPrincipal,
+    time_range: TimeRange = Query(default=TimeRange.LAST_30, alias="range"),
+) -> schemas.HittingPeriodSummaryOut:
+    player = authorize_player(db, principal, player_id)
+    return mappers.hitting_period(
+        player,
+        hitting.period_summary(
+            db,
+            principal.organization_id,
+            player,
+            time_range=time_range,
+            timezone_name=principal.organization.timezone,
+        ),
     )
 
 

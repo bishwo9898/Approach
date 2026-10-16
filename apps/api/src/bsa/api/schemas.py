@@ -13,6 +13,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from bsa.domain.analytics import TimeRange
 from bsa.domain.enums import (
     Aggregation,
     Handedness,
@@ -516,3 +517,73 @@ class SignInOut(ApiModel):
     expires_at: datetime
     role: Role
     display_name: str
+
+
+# -- performance over a period ----------------------------------------------
+
+
+class TrendBucketOut(ApiModel):
+    """One point on the trend.
+
+    Every measurement is nullable and `sessions` says why. A bucket with no
+    session is kept rather than dropped, and the client must render it as a gap:
+    the athlete did not hit zero, they did not bat.
+    """
+
+    start: date
+    end: date
+    label: str
+    sessions: int
+    pitches_faced: int
+    batted_balls: int
+    best_exit_velocity_mph: float | None
+    average_exit_velocity_mph: float | None
+    sweet_spot_rate: float | None
+
+
+class PeriodComparisonOut(ApiModel):
+    """A headline number against the equally-long window before it."""
+
+    current: float | None
+    previous: float | None
+    delta: float | None
+    percent_change: float | None
+    current_sample: int
+    previous_sample: int
+
+
+class HittingPeriodSummaryOut(ApiModel):
+    """How an athlete has hit over a window of time."""
+
+    player: PlayerSummary
+    range: TimeRange
+    start: date
+    end: date
+    #: "day" | "week" | "month" -- how the window was cut up, derived from its
+    #: length so the client never has to choose a combination that makes no sense.
+    grain: str
+    grain_label: str
+
+    sessions: int
+    first_session: date | None
+    last_session: date | None
+    #: False when nothing was recorded in this window. The client shows that
+    #: rather than a page of dashes.
+    has_data: bool
+    #: False when there is one session: a measurement, not a trend.
+    has_trend: bool
+
+    pitches_faced: int
+    swings: int
+    whiffs: int
+    whiff_rate: float | None
+    batted_balls: int
+    best_exit_velocity_mph: float | None
+    average_exit_velocity_mph: float | None
+    sweet_spot_count: int
+    sweet_spot_rate: float | None
+
+    best_exit_velocity_change: PeriodComparisonOut
+    average_exit_velocity_change: PeriodComparisonOut
+
+    buckets: list[TrendBucketOut]

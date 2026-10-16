@@ -4,69 +4,12 @@ import { useState } from "react";
 
 import { ContactChart } from "@/components/hitting/contact-chart";
 import { InsightList } from "@/components/hitting/insight-list";
+import { Section, Tile, percent, value } from "@/components/hitting/primitives";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate } from "@/lib/format";
 import type { HittingReport, PitchGroupSplit } from "@/lib/types";
-
-/** A number that cannot be rendered shows as an em dash, never as zero. */
-function value(n: number | null | undefined, digits = 1): string {
-  return n === null || n === undefined ? "—" : n.toFixed(digits);
-}
-
-function percent(n: number | null | undefined): string {
-  return n === null || n === undefined ? "—" : `${n.toFixed(0)}%`;
-}
-
-function Tile({
-  label,
-  figure,
-  unit,
-  sub,
-}: {
-  label: string;
-  figure: string;
-  unit?: string;
-  sub: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <p className="tabular mt-2 text-[28px] font-semibold leading-none tracking-tight">
-          {figure}
-          {unit ? (
-            <span className="ml-1 text-base font-normal text-muted-foreground">
-              {unit}
-            </span>
-          ) : null}
-        </p>
-        <p className="mt-2 text-[11px] text-muted-foreground">{sub}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Section({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-3">
-      <div>
-        <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
-        {hint ? <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p> : null}
-      </div>
-      {children}
-    </section>
-  );
-}
 
 /**
  * One pitch type, as a card rather than a table row.

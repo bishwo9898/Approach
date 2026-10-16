@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
-import type { CreatePlayerInput } from "@/lib/types";
+import type { CreatePlayerInput, TimeRange } from "@/lib/types";
 
 /**
  * Server state lives in TanStack Query, not in component state.
@@ -91,6 +91,24 @@ export const useLatestHittingSession = (playerId?: string) =>
     queryKey: ["hitting", playerId ?? "me", "latest"],
     queryFn: () =>
       playerId ? api.latestHittingSession(playerId) : api.myLatestHittingSession(),
+    retry: false,
+  });
+
+/**
+ * Performance over a window of time.
+ *
+ * `enabled` so switching back to the single-session view does not keep
+ * refetching a period nobody is looking at. No retry: an empty window is a
+ * 200 with `has_data: false`, so a failure here is a real failure.
+ */
+export const useHittingPeriod = (range: TimeRange | null, playerId?: string) =>
+  useQuery({
+    queryKey: ["hitting", playerId ?? "me", "period", range],
+    queryFn: () =>
+      playerId
+        ? api.hittingPeriod(playerId, range as TimeRange)
+        : api.myHittingPeriod(range as TimeRange),
+    enabled: Boolean(range),
     retry: false,
   });
 

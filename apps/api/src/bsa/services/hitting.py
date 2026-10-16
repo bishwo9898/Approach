@@ -4,14 +4,18 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from datetime import date
 
 from sqlalchemy.orm import Session
 
+from bsa.core.clock import today_in
 from bsa.core.errors import NotFoundError
 from bsa.db.models import Player, SessionVideo, TrainingSession
 from bsa.db.repositories import hitting as hitting_repo
 from bsa.db.repositories import sessions as sessions_repo
+from bsa.domain.analytics import TimeRange, preceding_window, window_for
 from bsa.domain.hitting_report import FacedPitch, HittingReport, build_report
+from bsa.domain.progress import PeriodSummary, summarize_period
 
 
 @dataclass(slots=True)
@@ -68,3 +72,39 @@ def latest_session_report(
     if not recent:
         return None
     return session_report(db, organization_id, player, recent[0].id)
+
+
+def period_summary(
+    db: Session,
+    organization_id: uuid.UUID,
+    player: Player,
+    *,
+    time_range: TimeRange,
+    timezone_name: str | None = None,
+    today: date | None = None,
+) -> PeriodSummary:
+    """How the athlete has hit over a window of time.
+
+    "Today" is the facility's today, not UTC's -- an evening session in New
+    York is already tomorrow in UTC, and a window that silently excludes the
+    session a coach just ran is worse than no window at all.
+
+    All-time starts at the athlete's first session rather than at an arbitrary
+    epoch, so the trend does not open with years of empty buckets.
+    """
+    anchor = today or today_in(timezone_name)
+
+    earliest: date | None = None
+    if time_range is TimeRange.ALL_TIME:
+        known = hitting_repo.sessions_batted_in(db, player.id, limit=500)
+        earliest = min((s.session_date for s in known), default=anchor)
+
+    window = window_for(time_range, anchor, earliest)
+    previous = preceding_window(window)
+
+    return summarize_period(
+        hitting_repo.sessions_with_pitches(db, player.id, start=window.start, end=window.end),
+        hitting_repo.sessions_with_pitches(db, player.id, start=previous.start, end=previous.end),
+        time_range=time_range,
+        window=window,
+    )

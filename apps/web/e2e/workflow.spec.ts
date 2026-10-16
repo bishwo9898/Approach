@@ -159,6 +159,26 @@ test.describe("player", () => {
     await expect(page.getByRole("link", { name: "Athletes" })).toHaveCount(0);
   });
 
+  test("can switch to a period and gets an honest answer either way", async ({
+    page,
+  }) => {
+    await signIn(page, PLAYER_EMAIL);
+    await page.getByRole("button", { name: "Month" }).click();
+
+    // With one session the view exists and says so; with several it draws the
+    // trend. Both are correct, so assert the view rendered rather than which.
+    await expect(
+      page
+        .getByText("Nothing to show yet")
+        .or(page.getByText("Not enough for a trend yet"))
+        .or(page.getByRole("img", { name: /Exit velocity/ })),
+    ).toBeVisible();
+
+    // Going back to the session view must still work.
+    await page.getByRole("button", { name: "Last session" }).click();
+    await expect(page.getByText(/\d+ pitches · \d+ swings/)).toBeVisible();
+  });
+
   test("every number on the page carries its sample size", async ({ page }) => {
     await signIn(page, PLAYER_EMAIL);
 

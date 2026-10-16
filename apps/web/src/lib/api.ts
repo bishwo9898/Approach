@@ -13,6 +13,7 @@ import { getToken } from "@/lib/session";
 import type {
   ActivationTarget,
   CreatePlayerInput,
+  HittingPeriodSummary,
   HittingReport,
   HittingSessionSummary,
   CurrentUser,
@@ -289,6 +290,15 @@ export const api = {
 
   myHittingSession: (sessionId: string) =>
     request<HittingReport>(`/api/v1/me/hitting/sessions/${sessionId}`),
+
+  /** How an athlete has hit over a window. Answers even when the window is empty. */
+  myHittingPeriod: (range: TimeRange = "30d") =>
+    request<HittingPeriodSummary>(`/api/v1/me/hitting/summary${qs({ range })}`),
+
+  hittingPeriod: (playerId: string, range: TimeRange = "30d") =>
+    request<HittingPeriodSummary>(
+      `/api/v1/players/${playerId}/hitting/summary${qs({ range })}`,
+    ),
 
   latestHittingSession: (playerId: string) =>
     request<HittingReport>(`/api/v1/players/${playerId}/hitting/latest`),

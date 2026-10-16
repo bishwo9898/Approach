@@ -401,6 +401,175 @@
         "title": "HealthOut",
         "type": "object"
       },
+      "HittingPeriodSummaryOut": {
+        "description": "How an athlete has hit over a window of time.",
+        "properties": {
+          "average_exit_velocity_change": {
+            "$ref": "#/components/schemas/PeriodComparisonOut"
+          },
+          "average_exit_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Exit Velocity Mph"
+          },
+          "batted_balls": {
+            "title": "Batted Balls",
+            "type": "integer"
+          },
+          "best_exit_velocity_change": {
+            "$ref": "#/components/schemas/PeriodComparisonOut"
+          },
+          "best_exit_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Exit Velocity Mph"
+          },
+          "buckets": {
+            "items": {
+              "$ref": "#/components/schemas/TrendBucketOut"
+            },
+            "title": "Buckets",
+            "type": "array"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "first_session": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Session"
+          },
+          "grain": {
+            "title": "Grain",
+            "type": "string"
+          },
+          "grain_label": {
+            "title": "Grain Label",
+            "type": "string"
+          },
+          "has_data": {
+            "title": "Has Data",
+            "type": "boolean"
+          },
+          "has_trend": {
+            "title": "Has Trend",
+            "type": "boolean"
+          },
+          "last_session": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Session"
+          },
+          "pitches_faced": {
+            "title": "Pitches Faced",
+            "type": "integer"
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerSummary"
+          },
+          "range": {
+            "$ref": "#/components/schemas/TimeRange"
+          },
+          "sessions": {
+            "title": "Sessions",
+            "type": "integer"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          },
+          "sweet_spot_count": {
+            "title": "Sweet Spot Count",
+            "type": "integer"
+          },
+          "sweet_spot_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sweet Spot Rate"
+          },
+          "swings": {
+            "title": "Swings",
+            "type": "integer"
+          },
+          "whiff_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whiff Rate"
+          },
+          "whiffs": {
+            "title": "Whiffs",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "player",
+          "range",
+          "start",
+          "end",
+          "grain",
+          "grain_label",
+          "sessions",
+          "first_session",
+          "last_session",
+          "has_data",
+          "has_trend",
+          "pitches_faced",
+          "swings",
+          "whiffs",
+          "whiff_rate",
+          "batted_balls",
+          "best_exit_velocity_mph",
+          "average_exit_velocity_mph",
+          "sweet_spot_count",
+          "sweet_spot_rate",
+          "best_exit_velocity_change",
+          "average_exit_velocity_change",
+          "buckets"
+        ],
+        "title": "HittingPeriodSummaryOut",
+        "type": "object"
+      },
       "HittingSessionReportOut": {
         "properties": {
           "average_exit_velocity_mph": {
@@ -1428,6 +1597,73 @@
         "title": "MetricValue",
         "type": "object"
       },
+      "PeriodComparisonOut": {
+        "description": "A headline number against the equally-long window before it.",
+        "properties": {
+          "current": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current"
+          },
+          "current_sample": {
+            "title": "Current Sample",
+            "type": "integer"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta"
+          },
+          "percent_change": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent Change"
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous"
+          },
+          "previous_sample": {
+            "title": "Previous Sample",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "current",
+          "previous",
+          "delta",
+          "percent_change",
+          "current_sample",
+          "previous_sample"
+        ],
+        "title": "PeriodComparisonOut",
+        "type": "object"
+      },
       "PersonalRecordEventOut": {
         "properties": {
           "achieved_on": {
@@ -2189,6 +2425,83 @@
         "title": "TodaySnapshotOut",
         "type": "object"
       },
+      "TrendBucketOut": {
+        "description": "One point on the trend.\n\nEvery measurement is nullable and `sessions` says why. A bucket with no\nsession is kept rather than dropped, and the client must render it as a gap:\nthe athlete did not hit zero, they did not bat.",
+        "properties": {
+          "average_exit_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Exit Velocity Mph"
+          },
+          "batted_balls": {
+            "title": "Batted Balls",
+            "type": "integer"
+          },
+          "best_exit_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Exit Velocity Mph"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "pitches_faced": {
+            "title": "Pitches Faced",
+            "type": "integer"
+          },
+          "sessions": {
+            "title": "Sessions",
+            "type": "integer"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          },
+          "sweet_spot_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sweet Spot Rate"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "label",
+          "sessions",
+          "pitches_faced",
+          "batted_balls",
+          "best_exit_velocity_mph",
+          "average_exit_velocity_mph",
+          "sweet_spot_rate"
+        ],
+        "title": "TrendBucketOut",
+        "type": "object"
+      },
       "UnresolvedIdentityOut": {
         "properties": {
           "external_display_name": {
@@ -2899,6 +3212,49 @@
         ]
       }
     },
+    "/api/v1/me/hitting/summary": {
+      "get": {
+        "description": "How the athlete has hit over a window, rather than in one session.\n\nAlways answers, including when the window holds nothing. An athlete who has\nnot batted this month gets `has_data=false` and null measurements, not a\n404 -- the question \"how did this month go?\" has an answer, and the answer\nis \"you did not bat\".",
+        "operationId": "my_period_summary_api_v1_me_hitting_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TimeRange",
+              "default": "30d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HittingPeriodSummaryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Period Summary",
+        "tags": [
+          "hitting"
+        ]
+      }
+    },
     "/api/v1/me/overview": {
       "get": {
         "operationId": "my_overview_api_v1_me_overview_get",
@@ -3367,7 +3723,7 @@
     },
     "/api/v1/players/{player_id}/hitting/sessions/{session_id}/videos": {
       "post": {
-        "description": "Attach a video of this athlete's session.\n\nAdmin-only, and the link must be http(s) -- this is rendered on a page shown\nto a minor, so an unchecked URL would be a stored scripting hole.",
+        "description": "Attach a video of this athlete's session.\n\nStaff only, and the link must be http(s) -- this is rendered on a page shown\nto a minor, so an unchecked URL would be a stored scripting hole.",
         "operationId": "add_video_api_v1_players__player_id__hitting_sessions__session_id__videos_post",
         "parameters": [
           {
@@ -3424,6 +3780,58 @@
           }
         },
         "summary": "Add Video",
+        "tags": [
+          "hitting"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}/hitting/summary": {
+      "get": {
+        "operationId": "hitting_period_summary_api_v1_players__player_id__hitting_summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TimeRange",
+              "default": "30d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HittingPeriodSummaryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Hitting Period Summary",
         "tags": [
           "hitting"
         ]

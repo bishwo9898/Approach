@@ -334,6 +334,31 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/hitting/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * My Period Summary
+     * @description How the athlete has hit over a window, rather than in one session.
+     *
+     *     Always answers, including when the window holds nothing. An athlete who has
+     *     not batted this month gets `has_data=false` and null measurements, not a
+     *     404 -- the question "how did this month go?" has an answer, and the answer
+     *     is "you did not bat".
+     */
+    get: operations["my_period_summary_api_v1_me_hitting_summary_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/overview": {
     parameters: {
       query?: never;
@@ -521,10 +546,27 @@ export interface paths {
      * Add Video
      * @description Attach a video of this athlete's session.
      *
-     *     Admin-only, and the link must be http(s) -- this is rendered on a page shown
+     *     Staff only, and the link must be http(s) -- this is rendered on a page shown
      *     to a minor, so an unchecked URL would be a stored scripting hole.
      */
     post: operations["add_video_api_v1_players__player_id__hitting_sessions__session_id__videos_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/players/{player_id}/hitting/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Hitting Period Summary */
+    get: operations["hitting_period_summary_api_v1_players__player_id__hitting_summary_get"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -859,6 +901,60 @@ export interface components {
       status: string;
       /** Version */
       version: string;
+    };
+    /**
+     * HittingPeriodSummaryOut
+     * @description How an athlete has hit over a window of time.
+     */
+    HittingPeriodSummaryOut: {
+      average_exit_velocity_change: components["schemas"]["PeriodComparisonOut"];
+      /** Average Exit Velocity Mph */
+      average_exit_velocity_mph: number | null;
+      /** Batted Balls */
+      batted_balls: number;
+      best_exit_velocity_change: components["schemas"]["PeriodComparisonOut"];
+      /** Best Exit Velocity Mph */
+      best_exit_velocity_mph: number | null;
+      /** Buckets */
+      buckets: components["schemas"]["TrendBucketOut"][];
+      /**
+       * End
+       * Format: date
+       */
+      end: string;
+      /** First Session */
+      first_session: string | null;
+      /** Grain */
+      grain: string;
+      /** Grain Label */
+      grain_label: string;
+      /** Has Data */
+      has_data: boolean;
+      /** Has Trend */
+      has_trend: boolean;
+      /** Last Session */
+      last_session: string | null;
+      /** Pitches Faced */
+      pitches_faced: number;
+      player: components["schemas"]["PlayerSummary"];
+      range: components["schemas"]["TimeRange"];
+      /** Sessions */
+      sessions: number;
+      /**
+       * Start
+       * Format: date
+       */
+      start: string;
+      /** Sweet Spot Count */
+      sweet_spot_count: number;
+      /** Sweet Spot Rate */
+      sweet_spot_rate: number | null;
+      /** Swings */
+      swings: number;
+      /** Whiff Rate */
+      whiff_rate: number | null;
+      /** Whiffs */
+      whiffs: number;
     };
     /** HittingSessionReportOut */
     HittingSessionReportOut: {
@@ -1203,6 +1299,24 @@ export interface components {
       /** Value */
       value: number | null;
     };
+    /**
+     * PeriodComparisonOut
+     * @description A headline number against the equally-long window before it.
+     */
+    PeriodComparisonOut: {
+      /** Current */
+      current: number | null;
+      /** Current Sample */
+      current_sample: number;
+      /** Delta */
+      delta: number | null;
+      /** Percent Change */
+      percent_change: number | null;
+      /** Previous */
+      previous: number | null;
+      /** Previous Sample */
+      previous_sample: number;
+    };
     /** PersonalRecordEventOut */
     PersonalRecordEventOut: {
       /**
@@ -1513,6 +1627,40 @@ export interface components {
       sessions: number;
       /** Tracked Events */
       tracked_events: number;
+    };
+    /**
+     * TrendBucketOut
+     * @description One point on the trend.
+     *
+     *     Every measurement is nullable and `sessions` says why. A bucket with no
+     *     session is kept rather than dropped, and the client must render it as a gap:
+     *     the athlete did not hit zero, they did not bat.
+     */
+    TrendBucketOut: {
+      /** Average Exit Velocity Mph */
+      average_exit_velocity_mph: number | null;
+      /** Batted Balls */
+      batted_balls: number;
+      /** Best Exit Velocity Mph */
+      best_exit_velocity_mph: number | null;
+      /**
+       * End
+       * Format: date
+       */
+      end: string;
+      /** Label */
+      label: string;
+      /** Pitches Faced */
+      pitches_faced: number;
+      /** Sessions */
+      sessions: number;
+      /**
+       * Start
+       * Format: date
+       */
+      start: string;
+      /** Sweet Spot Rate */
+      sweet_spot_rate: number | null;
     };
     /** UnresolvedIdentityOut */
     UnresolvedIdentityOut: {
@@ -2005,6 +2153,37 @@ export interface operations {
       };
     };
   };
+  my_period_summary_api_v1_me_hitting_summary_get: {
+    parameters: {
+      query?: {
+        range?: components["schemas"]["TimeRange"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HittingPeriodSummaryOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   my_overview_api_v1_me_overview_get: {
     parameters: {
       query?: {
@@ -2333,6 +2512,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["SessionVideoOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  hitting_period_summary_api_v1_players__player_id__hitting_summary_get: {
+    parameters: {
+      query?: {
+        range?: components["schemas"]["TimeRange"];
+      };
+      header?: never;
+      path: {
+        player_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HittingPeriodSummaryOut"];
         };
       };
       /** @description Validation Error */
