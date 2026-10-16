@@ -124,9 +124,20 @@ misconfigured auth provider cannot grant itself access to an athlete.
 
 | Role | May access |
 |---|---|
-| `ADMIN` | All organization data, integrations, player mappings, metric configuration |
-| `COACH` | Organization players and their analytics |
+| `ADMIN` | Everything a coach can reach, plus room for operations a facility may later want to withhold from coaching staff |
+| `COACH` | Every athlete in the organization and their analytics; adding an athlete, mapping a vendor identity, attaching a session video |
 | `PLAYER` | Only the athlete their own user row points at |
+
+The facility runs on two roles, coach and player. `ADMIN` is therefore vacant,
+and anything gated on it is unreachable — which is how a "Map athlete" control
+ended up on the coach's own Data Health page under the label *Admin mapping
+required*. Staff actions are gated on `require_staff` (admin **or** coach) for
+that reason, not because the distinction stopped mattering: the role still
+exists, and a third role can take operations back off coaches without a schema
+change.
+
+What never widens is the athlete boundary. `PLAYER` is checked separately and
+against the athlete their own row points at, so none of the above touches it.
 
 `PARENT` is future scope and is not implemented.
 
