@@ -58,10 +58,24 @@ To stop: `docker compose down`. To wipe the data too: `docker compose down -v`.
 { "status": "ok", "database": "ok", "database_target": "db:5432/bsa" }
 ```
 
-`db:5432` is the Docker database. `localhost:5432` is a local one. This matters
-because **running Docker and a local API at the same time collides on port 8000**
-— your browser may reach one while your terminal reaches the other, each with
-different data. Run one or the other, not both.
+`db:5432` is the Docker database. `localhost:5432` is a local one.
+
+This matters more than it looks. Running Docker and a native API at the same
+time does **not** reliably collide on port 8000 — it used to silently coexist,
+because Docker published on every interface (IPv6 included) while a native
+`uvicorn` binds IPv4 only. macOS resolves `localhost` to `::1` first, so the
+browser reached Docker while the terminal reached the native process, each with
+a different database. Valid credentials then fail to sign in, which looks like
+an auth bug and is not one.
+
+The compose file now binds `127.0.0.1` explicitly, so starting the second stack
+fails with *port is already allocated* instead. If you are ever unsure which one
+answered, ask both:
+
+```bash
+curl -s http://127.0.0.1:8000/health   # IPv4
+curl -s http://[::1]:8000/health       # IPv6 -- should refuse the connection
+```
 
 <details>
 <summary>Running natively instead — also one command</summary>

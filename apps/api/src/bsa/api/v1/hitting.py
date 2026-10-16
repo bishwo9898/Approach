@@ -14,9 +14,9 @@ from fastapi import APIRouter
 
 from bsa.api import mappers, schemas
 from bsa.api.deps import (
-    AdminPrincipal,
     CurrentPrincipal,
     DbSession,
+    StaffPrincipal,
     authorize_player,
     current_player,
 )
@@ -144,11 +144,11 @@ def add_video(
     session_id: uuid.UUID,
     payload: schemas.AddSessionVideoIn,
     db: DbSession,
-    principal: AdminPrincipal,
+    principal: StaffPrincipal,
 ) -> schemas.SessionVideoOut:
     """Attach a video of this athlete's session.
 
-    Admin-only, and the link must be http(s) -- this is rendered on a page shown
+    Staff only, and the link must be http(s) -- this is rendered on a page shown
     to a minor, so an unchecked URL would be a stored scripting hole.
     """
     player = authorize_player(db, principal, player_id)

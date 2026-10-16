@@ -185,11 +185,24 @@ def _fold_into_one(
     cases need a decision this script cannot make: moving sessions between
     athletes, or taking away a login somebody is already using.
     """
-    # The one with data wins; failing that the oldest, so the choice does not
-    # depend on dictionary ordering.
-    with_data = [p for p in players if _carries_data(db, p.id)]
-    ranked = sorted(players, key=lambda p: (p.created_at, str(p.id)))
-    survivor = with_data[0] if len(with_data) == 1 else ranked[0]
+
+    # Which record survives is chosen to avoid the refusals below, not left to
+    # chance. `created_at` cannot break the tie on its own: it defaults to the
+    # transaction timestamp, so records created by one run all share it, and the
+    # survivor would really be decided by a random UUID.
+    #
+    #   1. the one carrying imported data -- moving sessions is what we refuse
+    #   2. the one with a claimed login  -- taking that away is what we refuse
+    #   3. the oldest, then the lowest id, purely so the result is repeatable
+    def rank(player: Player) -> tuple[int, int, datetime, str]:
+        return (
+            0 if _carries_data(db, player.id) else 1,
+            0 if _claimed_account(db, player.id) else 1,
+            player.created_at,
+            str(player.id),
+        )
+
+    survivor = min(players, key=rank)
 
     for player in players:
         if player.id == survivor.id:

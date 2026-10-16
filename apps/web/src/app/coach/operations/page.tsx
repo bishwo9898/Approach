@@ -35,7 +35,10 @@ export default function OperationsPage() {
   const unresolved = useUnresolvedIdentities();
   const imports = useImports(15);
 
-  const isAdmin = user.data?.role === "ADMIN";
+  // Staff, not admin. The facility runs on two roles, so gating this on ADMIN
+  // put a control on the coach's own page that nobody could ever use. The
+  // server enforces the same rule; this only decides what is worth showing.
+  const isStaff = user.data?.role === "ADMIN" || user.data?.role === "COACH";
 
   return (
     <div className="space-y-8">
@@ -115,7 +118,7 @@ export default function OperationsPage() {
           {unresolved.isLoading ? (
             <Skeleton className="h-20 w-full" />
           ) : (
-            <IdentityResolver items={unresolved.data ?? []} canResolve={isAdmin} />
+            <IdentityResolver items={unresolved.data ?? []} canResolve={isStaff} />
           )}
         </CardContent>
       </Card>

@@ -54,6 +54,6 @@ cat <<'DONE'
     cd apps/api && .venv/bin/uvicorn bsa.api.app:app --reload --port 8000
     pnpm --filter @bsa/web dev
 
-Then open http://localhost:3000 and sign in as Chris Coach.
+Then open http://localhost:3000 and sign in with the login the seed printed.
 
 DONE

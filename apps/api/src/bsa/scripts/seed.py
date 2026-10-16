@@ -35,6 +35,11 @@ from bsa.domain.metric_catalog import STARTER_FUTURES_MAPPINGS, STARTER_METRICS
 from bsa.integrations.storage import get_object_store
 from bsa.integrations.trackman.csv_provider import TrackmanCsvProvider
 from bsa.integrations.trackman.schema import SourcePayload
+from bsa.scripts.provision_roster import (
+    DEV_DEMO_PASSWORD,
+    ensure_athlete_account,
+    ensure_demo_accounts,
+)
 from bsa.scripts.synthetic import ATHLETES, SyntheticAthlete, build_day_csv
 from bsa.services.ingestion import IngestionService
 
@@ -273,12 +278,30 @@ def seed(*, weeks: int = 14, today: date | None = None, reset: bool = False) -> 
         metrics = ensure_metrics(db, org)
         ensure_futures_mappings(db, org, metrics)
         imported = ingest_history(db, org, weeks=weeks, today=today, athletes=ATHLETES)
+        # After ingestion, so the demo athlete login belongs to someone who
+        # now has data. These are ordinary local accounts with ordinary Argon2
+        # hashes -- the same ones the roster provisioner creates.
+        settings = get_settings()
+        for athlete in db.scalars(select(Player).where(Player.organization_id == org.id)):
+            ensure_athlete_account(db, org, athlete, domain=settings.account_email_domain)
+        logins = ensure_demo_accounts(
+            db, org, domain=settings.account_email_domain, password=DEV_DEMO_PASSWORD
+        )
 
     print(f"\nSeeded organization {ORG_NAME!r}")
     print(f"  athletes:        {len(ATHLETES)}")
     print(f"  metrics:         {len(STARTER_METRICS)}")
     print(f"  imports ingested:{imported}")
-    print("\nDevelopment tokens (send as 'Authorization: Bearer <token>'):")
+    print("\nSign in at http://localhost:3000")
+    for email, display_name, role in logins:
+        print(f"  {role:<6} {email:<28} {display_name}")
+    print(f"  password: {DEV_DEMO_PASSWORD}")
+    print(
+        "\nEvery other seeded athlete has an account at first.last@"
+        f"{get_settings().account_email_domain} with no password yet -- "
+        "use 'Set up your account' to claim one."
+    )
+    print("\nDevelopment tokens, for BSA_AUTH_PROVIDER=dev only:")
     for subject, _email, name, role, _ext in DEV_USERS:
         print(f"  {role.value:<6} {name:<16} {subject}")
     print()

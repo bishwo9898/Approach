@@ -131,6 +131,15 @@ def give_account_to(db: Session, organization: Organization, player: Player) -> 
     return user
 
 
+def claim(db: Session, user: User) -> None:
+    """Give an account a password, as an athlete setting one up would."""
+    credential = db.get(UserCredential, user.id)
+    assert credential is not None
+    credential.password_hash = hash_password("RisingFastball26")
+    credential.password_set_at = datetime.now(UTC)
+    db.flush()
+
+
 def account_for(db: Session, player: Player) -> User | None:
     return db.scalars(
         select(User).where(User.player_id == player.id, User.active.is_(True))
@@ -286,23 +295,34 @@ class TestFoldingDuplicateRecords:
         assert outcome.merge_blocked[0][1] == "carries imported data"
         assert len(players(db, organization)) == 2
 
+    def test_the_record_with_a_claimed_login_is_the_one_that_survives(
+        self, db: Session, organization: Organization, already_split: list[Player]
+    ) -> None:
+        """Preferred deliberately, so folding does not have to refuse.
+
+        Which record is older cannot decide this: `created_at` defaults to the
+        transaction timestamp, so records written by one run share it exactly.
+        """
+        claim(db, give_account_to(db, organization, already_split[1]))
+
+        outcome = provision(db, organization, TWO_ROWS_ONE_PERSON)
+
+        assert outcome.players_folded == 1
+        assert not outcome.merge_blocked
+        remaining = players(db, organization)
+        assert [p.id for p in remaining] == [already_split[1].id]
+        assert identities_of(db, remaining[0]) == {"11", "22"}
+
     def test_it_refuses_to_retire_an_account_somebody_is_using(
         self, db: Session, organization: Organization, already_split: list[Player]
     ) -> None:
         """Taking away a login in use is not a side effect of re-running a
-        provisioning script."""
-        # The first record is the survivor (both are empty, so the oldest wins),
-        # so claiming the second is claiming the one that would be retired.
-        claimed = give_account_to(db, organization, already_split[1])
-        credential = db.get(UserCredential, claimed.id)
-        assert credential is not None
-        credential.password_hash = hash_password("RisingFastball26")
-        credential.password_set_at = datetime.now(UTC)
-        db.flush()
+        provisioning script. With both claimed, one of them would have to go."""
+        for player in already_split:
+            claim(db, give_account_to(db, organization, player))
 
         outcome = provision(db, organization, TWO_ROWS_ONE_PERSON)
 
         assert outcome.players_folded == 0
         assert [reason for _, reason in outcome.merge_blocked] == ["has a claimed account"]
         assert len(players(db, organization)) == 2
-        assert account_for(db, already_split[1]) is not None

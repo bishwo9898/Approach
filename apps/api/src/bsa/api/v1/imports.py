@@ -9,7 +9,6 @@ from fastapi import APIRouter, File, UploadFile
 
 from bsa.api import mappers, schemas
 from bsa.api.deps import (
-    AdminPrincipal,
     CurrentObjectStore,
     CurrentTrackmanProvider,
     DbSession,
@@ -154,7 +153,11 @@ def resolve_identity(
     item_id: uuid.UUID,
     payload: schemas.ResolveIdentityIn,
     db: DbSession,
-    principal: AdminPrincipal,
+    # Staff, not admin. The facility runs on two roles, coach and player, so an
+    # admin-only control on the coach's own Data Health page is a control
+    # nobody can use -- and mapping a vendor athlete to one of ours is exactly
+    # the judgement a coach is there to make. It stays audited either way.
+    principal: StaffPrincipal,
     provider: CurrentTrackmanProvider,
     object_store: CurrentObjectStore,
 ) -> schemas.ResolveIdentityOut:

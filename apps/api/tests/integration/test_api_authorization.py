@@ -160,11 +160,16 @@ def test_player_cannot_list_the_roster_or_see_the_coach_dashboard(client, roster
         assert client.get(path, headers=auth("dev|p1")).status_code == 403, path
 
 
-def test_coach_cannot_perform_admin_only_identity_mapping(client, roster) -> None:  # type: ignore[no-untyped-def]
-    """Deciding whose data is whose is an admin action."""
+def test_a_player_cannot_map_an_athlete(client, roster) -> None:  # type: ignore[no-untyped-def]
+    """Deciding whose data is whose is staff work, and a player is not staff.
+
+    A coach *can* do this: the facility runs on two roles, and mapping a vendor
+    athlete to one of ours is exactly the judgement a coach is there to make.
+    The line that matters is the one below it.
+    """
     response = client.post(
         f"/api/v1/identity/unresolved/{uuid.uuid4()}/resolve",
-        headers=auth("dev|coach"),
+        headers=auth("dev|p1"),
         json={"player_id": str(roster["first"].id)},
     )
 

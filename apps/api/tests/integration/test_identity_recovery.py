@@ -248,9 +248,14 @@ def test_reprocess_reports_a_missing_archive_rather_than_crashing(
     assert "archived payload" in response.json()["error"]["message"]
 
 
-def test_a_coach_cannot_map_an_athlete(
+def test_a_coach_can_map_an_athlete(
     client, db: Session, organization: Organization, held_import, metrics
 ) -> None:
+    """The facility runs on two roles, so the coach is the one who does this.
+
+    It is still audited, and still the single explicit act that attaches a
+    vendor identity to one of our athletes -- nothing here guesses.
+    """
     player = make_player(db, organization, first_name="Jake", last_name="Williams")
     db.flush()
     item = db.scalars(select(IdentityResolutionItem)).one()
@@ -261,6 +266,6 @@ def test_a_coach_cannot_map_an_athlete(
         json={"player_id": str(player.id)},
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 200
     db.expire_all()
-    assert count(db, ExternalPlayerIdentity) == 0
+    assert count(db, ExternalPlayerIdentity) == 1

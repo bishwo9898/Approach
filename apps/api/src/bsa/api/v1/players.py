@@ -12,7 +12,6 @@ from fastapi import APIRouter, Query
 
 from bsa.api import mappers, schemas
 from bsa.api.deps import (
-    AdminPrincipal,
     CurrentPrincipal,
     DbSession,
     StaffPrincipal,
@@ -51,7 +50,7 @@ def list_players(
 
 @router.post("", response_model=schemas.PlayerSummary, status_code=201)
 def create_player(
-    payload: schemas.CreatePlayerIn, db: DbSession, principal: AdminPrincipal
+    payload: schemas.CreatePlayerIn, db: DbSession, principal: StaffPrincipal
 ) -> schemas.PlayerSummary:
     """Add an athlete to the roster.
 

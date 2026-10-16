@@ -3,6 +3,14 @@
 #   docker compose up -d db          # just PostgreSQL, for running the apps natively
 #   docker compose up -d             # the whole stack: db + api + web
 #
+# Every published port binds 127.0.0.1 explicitly rather than every interface.
+# That is not about exposure, it is about failing loudly: Docker publishing on
+# all interfaces also binds IPv6, so a natively-run API on 127.0.0.1:8000 and
+# this stack on [::1]:8000 can both "work" at once. macOS resolves localhost to
+# ::1 first, so the browser then talks to a different database than the terminal
+# does, and a sign-in fails with credentials that are perfectly valid. Binding
+# IPv4 only turns that into "port is already allocated" at startup.
+#
 # Production runs on Cloud Run + Cloud SQL and does not use this file.
 
 services:
@@ -15,7 +23,7 @@ services:
       POSTGRES_DB: bsa
     ports:
       # 5433 on the host so it does not collide with a local Postgres on 5432.
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - bsa-pgdata:/var/lib/postgresql/data
       - ./scripts/seed/init-test-db.sql:/docker-entrypoint-initdb.d/10-init-test-db.sql:ro
@@ -34,15 +42,24 @@ services:
         condition: service_healthy
     environment:
       BSA_ENV: development
-      BSA_AUTH_PROVIDER: dev
+      # Per-person accounts, same as a native run. Previously "dev", which left
+      # this stack unable to serve the sign-in the app actually uses.
+      BSA_AUTH_PROVIDER: local
+      BSA_ACCOUNT_EMAIL_DOMAIN: approach.com
+      # A matching email is enough locally. A deployed API refuses to boot
+      # without an explicit choice here.
+      BSA_SIGNUP_GATE: open
       # Inside the compose network Postgres is reachable on its own port.
       BSA_DATABASE_URL: postgresql+psycopg://bsa:bsa@db:5432/bsa
       BSA_TEST_DATABASE_URL: postgresql+psycopg://bsa:bsa@db:5432/bsa_test
       BSA_OBJECT_STORE_BACKEND: local
       BSA_OBJECT_STORE_LOCAL_ROOT: /data/objectstore
-      BSA_CORS_ORIGINS: http://localhost:3000
+      # Both spellings of the same host. A browser pointed at 127.0.0.1:3000
+      # is a different *origin* from localhost:3000, so listing only one makes
+      # every request fail CORS and look exactly like "the server is down".
+      BSA_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       # Raw import archive survives container rebuilds. In production this is
       # GCS -- a local store is refused in production for exactly this reason.
@@ -70,7 +87,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
 
 volumes:
   bsa-pgdata:

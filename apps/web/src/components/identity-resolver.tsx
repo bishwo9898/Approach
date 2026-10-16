@@ -129,7 +129,7 @@ function UnresolvedRow({
             {open ? "Cancel" : "Map athlete"}
           </Button>
         ) : (
-          <span className="text-xs text-muted-foreground">Admin mapping required</span>
+          <span className="text-xs text-muted-foreground">Coach mapping required</span>
         )}
       </div>
 

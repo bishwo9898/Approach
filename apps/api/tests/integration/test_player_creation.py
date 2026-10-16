@@ -36,6 +36,7 @@ pytestmark = pytest.mark.integration
 
 ADMIN = {"Authorization": "Bearer dev|admin"}
 COACH = {"Authorization": "Bearer dev|coach"}
+PLAYER = {"Authorization": "Bearer dev|player"}
 PITCHER = ATHLETES[0]
 SESSION_DATE = date(2026, 9, 12)
 HISTORY_START = date(2026, 7, 1)
@@ -54,6 +55,7 @@ def client(db: Session, object_store):  # type: ignore[no-untyped-def]
 def users(db: Session, organization: Organization):  # type: ignore[no-untyped-def]
     make_user(db, organization, subject="dev|admin", role=Role.ADMIN)
     make_user(db, organization, subject="dev|coach", role=Role.COACH)
+    make_user(db, organization, subject="dev|player", role=Role.PLAYER)
     db.flush()
 
 
@@ -125,10 +127,23 @@ def test_creation_is_audited(client, db: Session, users) -> None:
     assert entry.audit_metadata["display_name"] == "Daniel Okafor"
 
 
-def test_a_coach_cannot_add_an_athlete(client, db: Session, users) -> None:
+def test_a_coach_can_add_an_athlete(client, db: Session, users) -> None:
+    """Adding an athlete is roster work, and the roster is the coach's."""
     response = client.post(
         "/api/v1/players",
         headers=COACH,
+        json={"first_name": "Daniel", "last_name": "Okafor"},
+    )
+
+    assert response.status_code == 201
+    assert count(db, Player) == 1
+
+
+def test_a_player_cannot_add_an_athlete(client, db: Session, users) -> None:
+    """The boundary that matters: an athlete cannot grow the roster."""
+    response = client.post(
+        "/api/v1/players",
+        headers=PLAYER,
         json={"first_name": "Daniel", "last_name": "Okafor"},
     )
 
