@@ -20,14 +20,12 @@ browser devtools console is.
 
 ## Authentication
 
-Delegated to a proven provider. We do not implement password storage, hashing,
-reset flows or session management — there is no version of us doing that which
-beats Clerk doing it.
-
 | Provider | Use |
 |---|---|
+| `local` | Current. Per-person accounts the facility provisions from a TrackMan roster export. Argon2id password hashes, opaque database-backed sessions. |
+| `passcode` | One shared passcode per role. A demo gate, superseded. |
 | `dev` | Local development and tests. Static seeded tokens, not secret. |
-| `clerk` | Intended production provider. Verifies the JWT against Clerk's published JWKS, checking issuer, audience and expiry. |
+| `clerk` | Intended destination. Verifies the JWT against Clerk's published JWKS, checking issuer, audience and expiry. |
 
 `Settings` **refuses to boot** with `BSA_AUTH_PROVIDER=dev` when
 `BSA_ENV=production`. The dev provider cannot reach production by
@@ -36,6 +34,76 @@ misconfiguration; the process will not start.
 Clerk verification deliberately reads **no** role or organization claim. A token
 failure returns "token verification failed" without saying why — telling a caller
 precisely which check failed helps them forge the next one.
+
+### Why we hold passwords at all
+
+The stated intent was to delegate this: there is no version of us doing password
+storage that beats Clerk doing it, and `clerk.py` is still where this is going.
+What changed is that the athletes are minors added from a roster export. They
+have no corporate identity to federate, no work email, and in many cases no
+email at all. A shared passcode per role cannot tell two of them apart, which
+means nothing is attributable and every athlete sees the same thing.
+
+So `local` is the honest interim, and it is deliberately narrow:
+
+| | |
+|---|---|
+| Hashing | Argon2id, 19 MiB / t=2 / 1 lane — OWASP's recommended minimum. Never a fast hash. |
+| Storage | `user_credentials`, a separate table. Every authenticated request loads a `User`; none of them carries a password hash into memory or a log line. |
+| Sessions | Rows in `user_sessions`, not signed tokens — a row can be revoked on sign-out, and a signed token cannot. Only the SHA-256 of the token is stored; a reader of that table cannot sign in as anyone. |
+| Lockout | Counted in Postgres, not in process memory, so a restart or a second instance does not hand an attacker a fresh budget. |
+| Rate limit | A per-client sliding window on the unauthenticated endpoints. In-process, and therefore defence in depth only — the lockout is the control that has to hold. |
+
+**What it does not do:** password reset, email verification, or multi-factor.
+All three need a mail channel this system does not have. A forgotten password is
+cleared by a coach. Self-service reset without a mail channel would reduce to
+"anyone who knows the address can take the account", which is strictly worse
+than the inconvenience.
+
+### Claiming an account
+
+Accounts are provisioned with no password; an athlete claims one.
+
+```
+provisioned --prove the address--> choose a password --> sign in
+```
+
+Two properties that are easy to get wrong and are tested:
+
+1. **Step two re-proves step one.** Setting a password repeats every check
+   itself, because the lookup hands back nothing that could serve as proof it
+   succeeded.
+2. **Only one caller can claim an account.** The password is written with a
+   conditional `UPDATE` that matches only while no password is set, so two
+   simultaneous setups cannot both succeed.
+
+### The one deliberate disclosure
+
+Account setup answers "is this address on the roster?" — a plain 404 with
+"Email does not match." Sign-in never does: a wrong address and a wrong password
+return the same message after the same amount of work (an unknown address still
+pays for a dummy Argon2 verification, so timing does not leak either).
+
+The asymmetry is intentional. Somebody given their address verbally cannot fix a
+typo if the only feedback is "something was wrong", and the roster this reveals
+is the facility's own class list, which every athlete in it already knows.
+
+What it costs: addresses are `firstname.lastname@<domain>`, so they are
+guessable from a team sheet. **`BSA_SIGNUP_GATE` is what closes that**, and it is
+the single most important setting in a deployment:
+
+| | |
+|---|---|
+| `open` | A matching address is enough. Whoever types it first owns the account. Development and demos against data nobody minds a stranger reading. |
+| `code` | A matching address **and** the account's one-time activation code, which the coach distributes. The code is stored as an Argon2 hash and shown exactly once, at provisioning. |
+
+A staging or production API **refuses to start** until it is set explicitly. An
+unset gate is not defaulted to the safe value — it is refused, so the choice is
+always on the record as somebody's.
+
+A missing code costs no lockout attempt; only a wrong one does. The setup form
+learns a code is needed from the reply, and charging for that would lock people
+out for following the form as designed.
 
 ## Authorization
 
@@ -173,7 +241,8 @@ UX preference.
 
 ## Before real athlete data is loaded
 
-- [ ] Replace the `dev` auth provider with Clerk; verify production refuses to
+- [ ] Replace the `local` provider with Clerk, which brings password reset and
+      email verification; verify production refuses to
       boot with `dev`.
 - [ ] Move all secrets to Secret Manager.
 - [ ] Switch the object store to GCS with a retention policy.

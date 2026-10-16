@@ -45,8 +45,8 @@ docker compose up -d --build
 docker compose exec api python -m bsa.scripts.seed --reset
 ```
 
-Open **http://localhost:3000** and sign in. The seed prints the passcodes;
-in development they are `coach` and `player`.
+Open **http://localhost:3000** and sign in. The seed prints a coach login and
+an athlete login, both with a password it chose.
 
 To stop: `docker compose down`. To wipe the data too: `docker compose down -v`.
 
@@ -127,11 +127,56 @@ cd apps/api
 .venv/bin/python -m bsa.scripts.seed_athlete "../../CSV files/<athlete>/<export>.csv"
 ```
 
-This reads the athlete from the export, registers their TrackMan identity, and
-ingests the session. Then sign in at http://localhost:3000 as **Coach** or
-**Player** — the player account is linked to whichever athlete you loaded.
+This reads the athlete from the export, registers their TrackMan identity,
+ingests the session, and prints a coach and an athlete login.
 
 Re-run it with the next athlete's export as more data arrives; no code changes.
+
+## Accounts
+
+Athletes do not sign themselves up. The facility provisions an account for every
+athlete on a TrackMan roster export, and the athlete later claims it:
+
+```
+provisioned (no password) --prove your email--> choose a password --> sign in
+```
+
+```bash
+cd apps/api
+# See what it would do, and which names it cannot decide. Writes nothing.
+.venv/bin/python -m bsa.scripts.provision_roster "<roster export>.csv" --dry-run
+
+# Do it.
+.venv/bin/python -m bsa.scripts.provision_roster "<roster export>.csv" \
+    --emails birth-year --link-existing --codes --demo-accounts
+```
+
+Each athlete gets `firstname.lastname@approach.com`. On the real 488-athlete
+export, 63 names belong to more than one TrackMan account — one of them to
+four — and a duplicated name is a duplicated address, which would let one
+athlete read another's sessions. So:
+
+| flag | what it does |
+|---|---|
+| *(default)* | only unambiguous names get an address; the rest are listed in `var/roster-review-*.csv` for a coach to decide |
+| `--emails birth-year` | shared names get their birth year appended (`first.last.2011@`), which needs a coach to tell each athlete which year is theirs. 470 of 488 then get an address; the remaining 18 share a name *and* a birth year |
+| `--link-existing` | attach a roster id to an athlete already in the database when exactly one of each matches by name. Off by default: a wrong link shows one athlete another's data |
+| `--codes` | issue each unclaimed account a one-time activation code, written to `var/activation-codes-*.csv`. The database keeps only hashes, so that file is the only copy |
+| `--demo-accounts` | give a coach login and one athlete login a known password, for testing |
+
+Re-running is safe: athletes are matched on their TrackMan id, accounts on the
+address they were issued, and nothing already claimed is touched.
+
+### Who may claim an account
+
+Addresses are derived from names, so anyone with a team sheet can guess one.
+`BSA_SIGNUP_GATE` decides whether that is enough:
+
+- `open` — a matching address is enough. Local development and demos.
+- `code` — a matching address **and** the activation code a coach hands out.
+
+A staging or production API **refuses to start** until this is set explicitly,
+so the choice is always somebody's rather than a default nobody saw.
 
 ## What the app shows today
 

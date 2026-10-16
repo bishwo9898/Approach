@@ -1,6 +1,106 @@
 {
   "components": {
     "schemas": {
+      "ActivationCompleteIn": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          },
+          "password_confirmation": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Password Confirmation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "password_confirmation"
+        ],
+        "title": "ActivationCompleteIn",
+        "type": "object"
+      },
+      "ActivationLookupIn": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "ActivationLookupIn",
+        "type": "object"
+      },
+      "ActivationTargetOut": {
+        "description": "What the password screen is told. Nothing the address did not imply.",
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "first_name": {
+            "title": "First Name",
+            "type": "string"
+          },
+          "password_rules": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Password Rules",
+            "type": "array"
+          },
+          "requires_code": {
+            "title": "Requires Code",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "email",
+          "first_name",
+          "requires_code",
+          "password_rules"
+        ],
+        "title": "ActivationTargetOut",
+        "type": "object"
+      },
       "AddSessionVideoIn": {
         "properties": {
           "external_event_id": {
@@ -988,6 +1088,28 @@
         "title": "IntegrationHealthOut",
         "type": "object"
       },
+      "LoginIn": {
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginIn",
+        "type": "object"
+      },
       "MetricCategory": {
         "enum": [
           "PITCHING",
@@ -1890,6 +2012,35 @@
         "title": "SessionVideoOut",
         "type": "object"
       },
+      "SignInOut": {
+        "description": "A new session. The token is the only copy -- it is not stored anywhere.",
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "expires_at",
+          "role",
+          "display_name"
+        ],
+        "title": "SignInOut",
+        "type": "object"
+      },
       "SourceStatus": {
         "description": "Confidence level of vendor-supplied data.\n\nTrackMan can publish a session as PRELIMINARY and later republish it as\nVERIFIED with corrected values. Everything derived from an event carries the\nstatus of the data it was derived from so the UI can label it honestly.",
         "enum": [
@@ -2141,6 +2292,139 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/auth/activation/complete": {
+      "post": {
+        "description": "Set the account's first password.\n\nDeliberately does not return a session. The athlete goes to the sign-in\nscreen and uses the password they just chose, which is the only way they\nfind out straight away that they can reproduce it.",
+        "operationId": "complete_api_v1_auth_activation_complete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivationCompleteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Complete",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/activation/lookup": {
+      "post": {
+        "description": "Check an email against the roster, before asking for a password.\n\nReturns 404 `email_not_recognized` when it does not match, which is the one\nplace the API confirms whether an address is enrolled. See\n`EmailNotRecognizedError` for why that is deliberate.",
+        "operationId": "lookup_api_v1_auth_activation_lookup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivationLookupIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivationTargetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lookup",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "description": "End this session only, leaving the person's other devices signed in.\n\nRequires a valid credential so an unauthenticated caller cannot revoke a\ntoken they happen to have seen in a log.",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Logout",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/dashboard/today": {
       "get": {
         "operationId": "today_api_v1_dashboard_today_get",
@@ -2816,8 +3100,8 @@
             "name": "limit",
             "required": false,
             "schema": {
-              "default": 50,
-              "maximum": 200,
+              "default": 100,
+              "maximum": 1000,
               "title": "Limit",
               "type": "integer"
             }

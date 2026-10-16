@@ -1,13 +1,12 @@
 /**
  * Session credential storage.
  *
- * Phase 1 uses the backend's development auth provider: a readable, seeded
- * token that identifies a user. It is NOT a secret and carries no permissions
- * of its own -- the server looks the user up and decides what they may see.
- *
- * When Clerk is wired up this module is the only thing that changes: `getToken`
- * returns Clerk's session token and the login page goes away.
+ * The token is an opaque bearer token issued by `POST /auth/login`. It carries
+ * no permissions of its own: the server resolves it to a user and decides what
+ * that user may see on every request. Clearing it here signs this browser out.
  */
+
+import type { QueryClient } from "@tanstack/react-query";
 
 const STORAGE_KEY = "bsa.session.token";
 
@@ -41,26 +40,21 @@ export function clearToken(): void {
 }
 
 /**
- * The two accounts we are testing with.
+ * Switch the signed-in person, cache and all.
  *
- * Created by `python -m bsa.scripts.seed_athlete`. The player account is
- * linked to whichever athlete the loaded export names, so no real name lives
- * in this repository. These are identities rather
- * than credentials: the development auth provider treats the token as the
- * subject, and refuses to run outside development. Clerk replaces all of this
- * before any real sign-in exists.
+ * Every cached query was answered *for the previous credential*. Keeping any of
+ * it across a sign-in would put one person's name, roster or report on screen
+ * for another -- which is how the sidebar ended up greeting the previous
+ * athlete while showing the new one's session. Clearing is the only safe
+ * default: there is no query here whose answer is the same for two people.
  */
-export const ACCOUNTS = [
-  {
-    token: "dev|coach",
-    label: "Coach",
-    role: "COACH" as const,
-    blurb: "See every athlete and import new sessions",
-  },
-  {
-    token: "dev|player",
-    label: "Player",
-    role: "PLAYER" as const,
-    blurb: "See only your own sessions",
-  },
-] as const;
+export function startSession(queryClient: QueryClient, token: string): void {
+  queryClient.clear();
+  setToken(token);
+}
+
+/** The same rule in reverse: nothing cached outlives the session it came from. */
+export function endSession(queryClient: QueryClient): void {
+  clearToken();
+  queryClient.clear();
+}

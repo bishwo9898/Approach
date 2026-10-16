@@ -11,6 +11,7 @@
 
 import { getToken } from "@/lib/session";
 import type {
+  ActivationTarget,
   CreatePlayerInput,
   HittingReport,
   HittingSessionSummary,
@@ -26,6 +27,7 @@ import type {
   PlayerOverview,
   PlayerSummary,
   ResolveIdentityResult,
+  SignIn,
   SyncJob,
   TimeRange,
   TodaySnapshot,
@@ -41,6 +43,8 @@ export class ApiError extends Error {
     readonly status: number,
     readonly code: string,
     message: string,
+    /** Extra fields the server attached, e.g. the list of password problems. */
+    readonly details: Record<string, unknown> = {},
   ) {
     super(message);
     this.name = "ApiError";
@@ -51,8 +55,9 @@ export class ApiError extends Error {
    *
    * Status 0 is reserved for this. It matters because a hosted API on a
    * free tier sleeps and takes the better part of a minute to wake -- the
-   * difference between "wrong passcode" and "server is waking up" is the
-   * difference between a user retyping forever and waiting ten seconds.
+   * difference between "email or password is incorrect" and "the server is
+   * waking up" is the difference between someone retyping a password that was
+   * correct all along and waiting ten seconds.
    */
   get isUnreachable(): boolean {
     return this.status === 0;
@@ -61,6 +66,29 @@ export class ApiError extends Error {
   /** The caller is not signed in, or their credential is no longer valid. */
   get isUnauthenticated(): boolean {
     return this.status === 401;
+  }
+
+  /** Nothing of this kind exists -- an unrecognized email, an athlete with no sessions. */
+  get isNotFound(): boolean {
+    return this.status === 404;
+  }
+
+  /** Too many attempts, or an account locked by them. Always temporary. */
+  get isThrottled(): boolean {
+    return this.status === 429;
+  }
+
+  /**
+   * Problems the server found with a submitted password, in its words.
+   *
+   * Returned as a list so the form can show every reason at once. The server's
+   * policy is the only one that decides; the browser's copy is a hint.
+   */
+  get problems(): string[] {
+    const found = (this.details as { problems?: unknown }).problems;
+    return Array.isArray(found)
+      ? found.filter((p): p is string => typeof p === "string")
+      : [];
   }
 
   /** Signed in, but not permitted. Never retry these. */
@@ -90,18 +118,26 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!response.ok) {
     let code = "http_error";
     let message = `Request failed with status ${response.status}`;
+    let details: Record<string, unknown> = {};
     try {
       const body = (await response.json()) as {
-        error?: { code: string; message: string };
+        error?: { code: string; message: string } & Record<string, unknown>;
+        detail?: { msg?: string }[];
       };
       if (body.error) {
-        code = body.error.code;
-        message = body.error.message;
+        const { code: errorCode, message: errorMessage, ...rest } = body.error;
+        code = errorCode;
+        message = errorMessage;
+        details = rest;
+      } else if (Array.isArray(body.detail) && body.detail[0]?.msg) {
+        // FastAPI's own request-validation shape, e.g. a malformed email.
+        code = "validation_error";
+        message = body.detail[0].msg.replace(/^Value error, /, "");
       }
     } catch {
       // A non-JSON error body (a proxy or gateway page) still gets a usable message.
     }
-    throw new ApiError(response.status, code, message);
+    throw new ApiError(response.status, code, message, details);
   }
 
   if (response.status === 204) return undefined as T;
@@ -120,6 +156,48 @@ const qs = (params: Record<string, string | number | boolean | undefined>): stri
 export const api = {
   me: () => request<CurrentUser>("/api/v1/me"),
 
+  // -- account setup and sign-in -------------------------------------------
+  //
+  // Accounts are provisioned by the facility from its roster, so there is no
+  // "register" call. An athlete proves which provisioned account is theirs,
+  // then chooses a password for it.
+
+  /** Check an email against the roster. Throws 404 when it does not match. */
+  checkEmail: (email: string, code?: string) =>
+    request<ActivationTarget>("/api/v1/auth/activation/lookup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, code: code || null }),
+    }),
+
+  /** Set the account's first password. Does not sign anyone in. */
+  createPassword: (input: {
+    email: string;
+    password: string;
+    passwordConfirmation: string;
+    code?: string;
+  }) =>
+    request<void>("/api/v1/auth/activation/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: input.email,
+        code: input.code || null,
+        password: input.password,
+        password_confirmation: input.passwordConfirmation,
+      }),
+    }),
+
+  login: (email: string, password: string) =>
+    request<SignIn>("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    }),
+
+  /** Revoke this session server-side. Other devices stay signed in. */
+  logout: () => request<void>("/api/v1/auth/logout", { method: "POST" }),
+
   // -- coach --------------------------------------------------------------
   today: (date?: string) =>
     request<TodaySnapshot>(`/api/v1/dashboard/today${qs({ date })}`),
@@ -129,7 +207,7 @@ export const api = {
 
   integrationStatus: () => request<IntegrationHealth>("/api/v1/integrations/status"),
 
-  searchPlayers: (q?: string, limit = 50) =>
+  searchPlayers: (q?: string, limit = 500) =>
     request<PlayerSummary[]>(`/api/v1/players${qs({ q, limit })}`),
 
   player: (playerId: string) => request<PlayerSummary>(`/api/v1/players/${playerId}`),

@@ -52,7 +52,7 @@ export default function PlayerPage() {
           {firstName ? `Hi ${firstName}` : "Your sessions"}
         </h1>
         <EmptyState
-          title="No sessions yet"
+          title="Nothing to show yet"
           description="Once your coach imports a TrackMan session you batted in, your report shows up here."
         />
       </div>

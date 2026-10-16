@@ -48,7 +48,13 @@ class Principal:
         return self.role in (Role.ADMIN, Role.COACH)
 
 
-def _bearer_token(request: Request) -> str:
+def bearer_token(request: Request) -> str:
+    """The raw credential from the Authorization header.
+
+    Public because signing out needs the token itself, not the principal it
+    resolves to -- the point is to revoke that one session and leave any other
+    browser the person is signed in on alone.
+    """
     header = request.headers.get("authorization", "")
     scheme, _, token = header.partition(" ")
     if scheme.lower() != "bearer" or not token.strip():
@@ -67,7 +73,7 @@ def get_principal(
     token claim: an auth provider must not be able to grant itself access to an
     athlete's data.
     """
-    subject = get_auth_provider(settings).verify(_bearer_token(request))
+    subject = get_auth_provider(settings, db).verify(bearer_token(request))
 
     user = db.scalars(
         select(User).where(

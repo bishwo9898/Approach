@@ -7,7 +7,7 @@ unit, its sample size and its source status.
 from __future__ import annotations
 
 import itertools
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -28,8 +28,12 @@ pytestmark = pytest.mark.integration
 
 PITCHER = ATHLETES[0]
 HITTER = next(a for a in ATHLETES if a.hits)
-TODAY = date(2026, 9, 12)
-HISTORY_START = date(2026, 7, 1)
+# Anchored to the real today, not a fixed date. These tests ask the API for a
+# "last 30 days" window, which it computes from the current date -- so a
+# hardcoded anchor silently stops overlapping the window once the calendar moves
+# past it, and the test starts failing on a day nobody changed any code.
+TODAY = date.today()
+HISTORY_START = TODAY - timedelta(days=73)
 COACH = {"Authorization": "Bearer dev|coach"}
 
 
@@ -63,7 +67,8 @@ def seeded(db: Session, organization: Organization, metrics, object_store):  # t
     make_user(db, organization, subject="dev|coach", role=Role.COACH)
 
     service = IngestionService(db, organization, TrackmanCsvProvider(), object_store)
-    for day in (date(2026, 8, 8), date(2026, 8, 22), date(2026, 9, 5), TODAY):
+    for offset in (35, 21, 7, 0):
+        day = TODAY - timedelta(days=offset)
         service.ingest(
             SourcePayload(
                 data=build_day_csv([PITCHER, HITTER], day, history_start=HISTORY_START),
@@ -220,7 +225,7 @@ def test_metric_catalog_is_served_as_data(client, seeded) -> None:  # type: igno
 
 
 def test_csv_upload_endpoint_ingests_and_reports_duplicates(client, seeded) -> None:  # type: ignore[no-untyped-def]
-    data = build_day_csv([PITCHER], date(2026, 9, 10), history_start=HISTORY_START)
+    data = build_day_csv([PITCHER], TODAY - timedelta(days=2), history_start=HISTORY_START)
     files = {"file": ("upload.csv", data, "text/csv")}
 
     first = client.post("/api/v1/imports/trackman/csv", headers=COACH, files=files)

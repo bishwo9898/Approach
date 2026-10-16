@@ -37,7 +37,10 @@ def list_players(
     principal: StaffPrincipal,
     q: str | None = Query(default=None, description="name search: first, last or preferred"),
     active_only: bool = True,
-    limit: int = Query(default=50, le=200),
+    # The real roster is ~490 athletes, so a cap of 200 would quietly hide a
+    # third of them behind a search box. Still capped, because an unbounded
+    # limit is a way to make the server do arbitrary work.
+    limit: int = Query(default=100, le=1000),
 ) -> list[schemas.PlayerSummary]:
     """Search the roster. Staff only -- a player has no roster."""
     found = players_repo.search(

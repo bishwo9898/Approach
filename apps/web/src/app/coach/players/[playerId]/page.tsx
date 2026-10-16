@@ -53,8 +53,8 @@ export default function CoachPlayerPage() {
 
       {!report ? (
         <EmptyState
-          title="No batting sessions imported yet"
-          description="Import a TrackMan export for this athlete from Data Health, and their report appears here."
+          title="Nothing to show yet"
+          description="No TrackMan session has been imported for this athlete. Import one from Data Health and their report appears here."
         />
       ) : (
         <>

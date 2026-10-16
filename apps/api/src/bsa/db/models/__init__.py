@@ -4,6 +4,7 @@ Imported as a unit so Alembic autogenerate and `Base.metadata.create_all` see
 every table regardless of import order.
 """
 
+from bsa.db.models.accounts import UserCredential, UserSession
 from bsa.db.models.audit import AuditLog
 from bsa.db.models.events import HitEvent, PitchEvent
 from bsa.db.models.ingest import ImportIssue, RawImport, TrainingSession
@@ -33,4 +34,6 @@ __all__ = [
     "SyncJob",
     "TrainingSession",
     "User",
+    "UserCredential",
+    "UserSession",
 ]

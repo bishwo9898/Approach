@@ -1,11 +1,13 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { Icon, type IconName } from "@/components/ui/icons";
 import { useCurrentUser } from "@/hooks/use-api";
-import { clearToken } from "@/lib/session";
+import { api } from "@/lib/api";
+import { endSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon?: IconName };
@@ -32,10 +34,20 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: user } = useCurrentUser();
 
-  const signOut = () => {
-    clearToken();
+  const signOut = async () => {
+    // Revoke the session server-side first, so the token cannot be reused from
+    // anywhere it may have been copied. Dropping it locally alone would leave a
+    // live credential behind.
+    try {
+      await api.logout();
+    } catch {
+      // Already expired, or the server is unreachable. Either way the local
+      // credential still goes -- signing out must never be blocked.
+    }
+    endSession(queryClient);
     router.replace("/login");
   };
 
@@ -101,7 +113,7 @@ export function AppShell({
             </div>
             <button
               type="button"
-              onClick={signOut}
+              onClick={() => void signOut()}
               className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               aria-label="Sign out"
               title="Sign out"
@@ -120,7 +132,7 @@ export function AppShell({
             </div>
             <button
               type="button"
-              onClick={signOut}
+              onClick={() => void signOut()}
               className="rounded-lg border border-border bg-card p-2.5 text-muted-foreground shadow-sm"
               aria-label="Sign out"
             >

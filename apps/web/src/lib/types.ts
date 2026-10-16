@@ -25,6 +25,12 @@ export type ResolveIdentityResult = Schemas["ResolveIdentityOut"];
 export type CreatePlayerInput = Schemas["CreatePlayerIn"];
 export type Role = Schemas["Role"];
 
+// -- account setup and sign-in ----------------------------------------------
+
+/** What the password screen is told once an email matches the roster. */
+export type ActivationTarget = Schemas["ActivationTargetOut"];
+export type SignIn = Schemas["SignInOut"];
+
 /** Whether a value may still change when TrackMan republishes its session. */
 export type SourceStatus = Schemas["SourceStatus"];
 export type RecordDirection = Schemas["RecordDirection"];

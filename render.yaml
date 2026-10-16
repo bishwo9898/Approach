@@ -5,10 +5,19 @@
 # build time.
 #
 #   1. render.com -> New -> Blueprint -> point at this repository
-#   2. Set the two passcodes when prompted (they are marked sync: false)
-#   3. Copy the API URL, then deploy apps/web to Vercel with it set as
+#   2. Copy the API URL, then deploy apps/web to Vercel with it set as
 #      NEXT_PUBLIC_API_BASE_URL
-#   4. Come back and set BSA_CORS_ORIGINS to the Vercel URL
+#   3. Come back and set BSA_CORS_ORIGINS to the Vercel URL
+#   4. Provision the roster against this database, from a machine with the
+#      export (it is never committed -- it is ~490 minors' names and birth
+#      dates). BSA_DATABASE_URL must point at the Render database:
+#
+#        BSA_DATABASE_URL="<render external connection string>" \
+#        BSA_ENV=staging BSA_SIGNUP_GATE=code \
+#          python -m bsa.scripts.provision_roster "<export>.csv" --codes
+#
+#      That writes the activation codes to var/ -- the database keeps only
+#      their hashes, so that file is the only readable copy.
 
 databases:
   - name: bsa-postgres
@@ -25,12 +34,27 @@ services:
     plan: free
     healthCheckPath: /health
     envVars:
-      # staging, not production: the passcode gate is a demo control, and
-      # production has stricter requirements this deployment does not meet yet.
+      # staging, not production: this deployment does not meet the stricter
+      # requirements production enforces (a real object store, among others).
       - key: BSA_ENV
         value: staging
+      # Per-person accounts with a password, provisioned from a roster export.
       - key: BSA_AUTH_PROVIDER
-        value: passcode
+        value: local
+      - key: BSA_ACCOUNT_EMAIL_DOMAIN
+        value: approach.com
+      # What an athlete must prove to claim the account made for them.
+      #
+      # "code" on purpose. Login addresses are first.last@domain, so anyone
+      # holding a team sheet can guess one; with "open", guessing an address is
+      # all it takes to claim that athlete's account and read their sessions.
+      # A deployed API refuses to boot unless this is set explicitly, so the
+      # choice is always somebody's rather than a default nobody saw.
+      #
+      # Change it to "open" in the dashboard only for a demo against data you
+      # would not mind a stranger reading.
+      - key: BSA_SIGNUP_GATE
+        value: code
       - key: BSA_DATABASE_URL
         fromDatabase:
           name: bsa-postgres
@@ -39,11 +63,6 @@ services:
         value: local
       - key: BSA_OBJECT_STORE_LOCAL_ROOT
         value: /tmp/objectstore
-      # Set these in the Render dashboard. Never commit them.
-      - key: BSA_COACH_PASSCODE
-        sync: false
-      - key: BSA_PLAYER_PASSCODE
-        sync: false
       # The deployed frontend's origin, e.g. https://approach.vercel.app
       - key: BSA_CORS_ORIGINS
         sync: false

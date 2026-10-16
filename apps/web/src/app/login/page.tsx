@@ -1,86 +1,117 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
+import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiError, api } from "@/lib/api";
-import { setToken } from "@/lib/session";
+import { endSession, startSession } from "@/lib/session";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
-  const [passcode, setPasscode] = useState("");
+  const queryClient = useQueryClient();
+  const justCreated = useSearchParams().get("created") === "1";
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [needsSetup, setNeedsSetup] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const signIn = async () => {
     setBusy(true);
     setError(null);
-    setToken(passcode);
+    setNeedsSetup(false);
+    // Any previous session goes first, so a failed sign-in never leaves a stale
+    // credential -- or a previous person's cached pages -- behind.
+    endSession(queryClient);
     try {
-      const user = await api.me();
-      router.replace(user.role === "PLAYER" ? "/player" : "/coach");
+      const session = await api.login(email, password);
+      startSession(queryClient, session.token);
+      router.replace(session.role === "PLAYER" ? "/player" : "/coach");
     } catch (cause) {
-      // An unreachable API is not a wrong passcode, and saying so would send
-      // someone retyping a passcode that was correct all along.
-      setError(
-        cause instanceof ApiError && cause.isUnreachable
-          ? "Can't reach the server. It may be starting up — try again shortly."
-          : "Passcode not recognized.",
-      );
+      if (cause instanceof ApiError && cause.code === "password_not_set") {
+        setNeedsSetup(true);
+        setError(cause.message);
+      } else if (cause instanceof ApiError && cause.isUnreachable) {
+        // Not a wrong password. Saying so would send someone retyping a
+        // password that was correct all along.
+        setError("Can't reach the server. It may be starting up — try again shortly.");
+      } else {
+        setError(
+          cause instanceof ApiError ? cause.message : "Email or password is incorrect.",
+        );
+      }
       setBusy(false);
     }
   };
 
+  const ready = email.trim().length > 0 && password.length > 0;
+
   return (
-    <main className="grid min-h-screen place-items-center bg-background px-6">
-      <div className="w-full max-w-[280px]">
-        <div className="mb-10 flex items-center justify-center gap-2.5">
-          <span className="grid size-8 place-items-center rounded-lg bg-primary">
-            <span className="block size-3 rotate-45 rounded-[2px] border-2 border-primary-foreground" />
-          </span>
-          <span className="text-lg font-semibold tracking-tight">Approach</span>
-        </div>
-
-        <form
-          className="space-y-2.5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (passcode.trim()) void signIn();
-          }}
-        >
-          <Input
-            type="password"
-            value={passcode}
-            onChange={(event) => setPasscode(event.target.value)}
-            placeholder="Passcode"
-            aria-label="Passcode"
-            autoComplete="current-password"
-            autoFocus
-            className="h-10 text-center"
-          />
-          <Button
-            type="submit"
-            className="h-10 w-full"
-            disabled={busy || !passcode.trim()}
-          >
-            {busy ? "Signing in…" : "Continue"}
-          </Button>
-        </form>
-
-        <p className="mt-3 h-4 text-center text-xs text-negative" role="alert">
-          {error}
+    <AuthCard>
+      {justCreated ? (
+        <p className="mb-4 rounded-md bg-positive/10 px-3 py-2 text-center text-xs text-positive">
+          Password created. Sign in below.
         </p>
+      ) : null}
 
-        {/* Stripped from the production bundle by the bundler's dead-code
-            elimination, so deployed builds carry no hint at all. */}
-        {process.env.NODE_ENV === "development" ? (
-          <p className="mt-6 text-center text-[11px] text-muted-foreground">
-            Development: <code>coach</code> or <code>player</code>
-          </p>
-        ) : null}
-      </div>
-    </main>
+      <form
+        className="space-y-2.5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (ready) void signIn();
+        }}
+      >
+        <Input
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="Email"
+          aria-label="Email"
+          autoComplete="username"
+          autoFocus
+          className="h-10"
+        />
+        <Input
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Password"
+          aria-label="Password"
+          autoComplete="current-password"
+          className="h-10"
+        />
+        <Button type="submit" className="h-10 w-full" disabled={busy || !ready}>
+          {busy ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
+
+      <p className="mt-3 min-h-8 text-center text-xs text-negative" role="alert">
+        {error}
+      </p>
+
+      <p className="text-center text-xs text-muted-foreground">
+        <Link
+          href={needsSetup ? `/activate?email=${encodeURIComponent(email)}` : "/activate"}
+          className="underline underline-offset-2 hover:text-foreground"
+        >
+          {needsSetup ? "Set your password" : "First time? Set up your account"}
+        </Link>
+      </p>
+    </AuthCard>
+  );
+}
+
+export default function LoginPage() {
+  // useSearchParams needs a Suspense boundary for a statically rendered page.
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

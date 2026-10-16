@@ -452,3 +452,67 @@ class HealthOut(BaseModel):
     #: -- a container and a local process, say -- you can tell in one request
     #: which one answered, instead of debugging a stale dashboard.
     database_target: str
+
+
+# -- account setup and sign-in ----------------------------------------------
+#
+# Accounts are provisioned by the facility from a TrackMan roster export, so
+# there is no "register" request: an athlete proves which provisioned account
+# is theirs, then chooses a password for it.
+
+
+class EmailIn(BaseModel):
+    """Shared email field.
+
+    Validated for shape only. Whether the address exists is a database
+    question, answered by the endpoint -- and the answer is deliberately
+    different for setup ("email does not match") and for sign-in (which says
+    nothing).
+    """
+
+    email: str = Field(min_length=3, max_length=320)
+
+    @field_validator("email")
+    @classmethod
+    def _looks_like_an_address(cls, value: str) -> str:
+        candidate = value.strip().lower()
+        local, _, domain = candidate.partition("@")
+        if not local or "." not in domain or domain.startswith(".") or domain.endswith("."):
+            raise ValueError("that is not an email address")
+        return candidate
+
+
+class ActivationLookupIn(EmailIn):
+    #: Required only when the deployment's signup gate is "code".
+    code: str | None = Field(default=None, max_length=64)
+
+
+class ActivationTargetOut(ApiModel):
+    """What the password screen is told. Nothing the address did not imply."""
+
+    email: str
+    first_name: str
+    requires_code: bool
+    #: The server's password rules, in the server's words, so the form cannot
+    #: show requirements that disagree with the ones actually enforced.
+    password_rules: list[str]
+
+
+class ActivationCompleteIn(ActivationLookupIn):
+    # Capped above the policy maximum rather than at it, so an over-long
+    # password gets the policy's explanation instead of a schema rejection.
+    password: str = Field(min_length=1, max_length=256)
+    password_confirmation: str = Field(min_length=1, max_length=256)
+
+
+class LoginIn(EmailIn):
+    password: str = Field(min_length=1, max_length=256)
+
+
+class SignInOut(ApiModel):
+    """A new session. The token is the only copy -- it is not stored anywhere."""
+
+    token: str
+    expires_at: datetime
+    role: Role
+    display_name: str

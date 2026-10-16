@@ -17,6 +17,9 @@ dependencies = [
     "python-multipart>=0.0.12",
     "structlog>=24.4",
     "pyjwt[crypto]>=2.9",
+    # Argon2id password hashing. OWASP's first recommendation, and the
+    # alternative is hand-rolling a KDF encoding, which is where this goes wrong.
+    "argon2-cffi>=23.1",
 ]
 
 [project.optional-dependencies]
@@ -53,7 +56,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]          # assert is the point of a test
+# assert is the point of a test, and so are fixture passwords -- these are
+# invented credentials for an ephemeral test database, not secrets.
+"tests/**" = ["S101", "S105", "S106"]
 "src/bsa/db/models/*" = ["N815"]
 "alembic/**" = ["E501", "N999"]
 

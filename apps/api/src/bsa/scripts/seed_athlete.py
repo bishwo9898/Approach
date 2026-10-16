@@ -3,8 +3,13 @@
     python -m bsa.scripts.seed_athlete "CSV files/<athlete>/<export>.csv"
 
 Unlike `bsa.scripts.seed`, this creates nothing synthetic. It reads the athlete
-the export names, creates them, registers their TrackMan identity, wires the two
-fixed development logins, and ingests the file through the ordinary pipeline.
+the export names, creates them, registers their TrackMan identity, ingests the
+file through the ordinary pipeline, and then wires a coach and a player login.
+
+Those two logins are ordinary local accounts with ordinary Argon2 hashes -- the
+same ones `provision_roster --demo-accounts` makes, by calling the same
+function. There is no bypass anywhere in the code, so signing in with them
+exercises the real sign-in path.
 
 The athlete is taken from the file rather than hardcoded. That keeps a real
 person's name out of a public repository, and means the next athlete needs no
@@ -28,23 +33,21 @@ from sqlalchemy.orm import Session
 
 from bsa.core.config import get_settings
 from bsa.core.logging import configure_logging
-from bsa.db.models import ExternalPlayerIdentity, Organization, Player, User
+from bsa.db.models import ExternalPlayerIdentity, Organization, Player
 from bsa.db.session import session_scope
-from bsa.domain.enums import Role
 from bsa.integrations.storage import get_object_store
 from bsa.integrations.trackman.csv_provider import TrackmanCsvProvider
 from bsa.integrations.trackman.live_atbat import vendor_identity
 from bsa.integrations.trackman.schema import SourcePayload
+from bsa.scripts.provision_roster import (
+    DEV_DEMO_PASSWORD,
+    ensure_athlete_account,
+    ensure_demo_accounts,
+)
 from bsa.services.ingestion import IngestionService
 
 ORG_SLUG = "approach-baseball"
 ORG_NAME = "Approach Baseball Performance"
-
-#: The two roles the app is used as. The passcode provider resolves a passcode
-#: to one of these, so these are the user subjects -- not the passcodes, which
-#: live in configuration and never in the repository.
-COACH_SUBJECT = "coach"
-PLAYER_SUBJECT = "player"
 
 
 def athlete_name_in(path: Path) -> str:
@@ -131,41 +134,6 @@ def ensure_athlete(db: Session, org: Organization, display_name: str) -> Player:
     return player
 
 
-def ensure_users(db: Session, org: Organization, athlete: Player) -> None:
-    provider = get_settings().auth_provider
-    wanted = [
-        (COACH_SUBJECT, "coach@approach.test", "Coach", Role.COACH, None),
-        (
-            PLAYER_SUBJECT,
-            "player@approach.test",
-            athlete.display_name,
-            Role.PLAYER,
-            athlete.id,
-        ),
-    ]
-    for subject, email, name, role, player_id in wanted:
-        existing = db.scalars(
-            select(User).where(User.auth_provider == provider, User.auth_subject == subject)
-        ).first()
-        if existing is not None:
-            # Keep the link current if the athlete row was recreated.
-            existing.player_id = player_id
-            existing.display_name = name
-            continue
-        db.add(
-            User(
-                organization_id=org.id,
-                auth_provider=provider,
-                auth_subject=subject,
-                email=email,
-                display_name=name,
-                role=role,
-                player_id=player_id,
-            )
-        )
-    db.flush()
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Create the testing roster from a real TrackMan export."
@@ -194,7 +162,6 @@ def main() -> int:
     with session_scope() as db:
         org = ensure_organization(db)
         athlete = ensure_athlete(db, org, display_name)
-        ensure_users(db, org, athlete)
         service = IngestionService(
             db, org, TrackmanCsvProvider(today=today), get_object_store(settings)
         )
@@ -206,6 +173,12 @@ def main() -> int:
             )
         )
         athlete_label = athlete.display_name
+        # After ingestion, so the demo player login is the account of an
+        # athlete who now actually has data rather than an empty profile.
+        ensure_athlete_account(db, org, athlete, domain=settings.account_email_domain)
+        logins = ensure_demo_accounts(
+            db, org, domain=settings.account_email_domain, password=DEV_DEMO_PASSWORD
+        )
 
     print(f"\n  Organization  {ORG_NAME}")
     print(f"  Athlete       {athlete_label}")
@@ -215,10 +188,10 @@ def main() -> int:
     print(f"    events      {outcome.pitch_events} pitches, {outcome.hit_events} hits")
     if outcome.unresolved_players:
         print(f"    UNRESOLVED  {', '.join(outcome.unresolved_players)}")
-    settings = get_settings()
-    print("\n  Sign in at http://localhost:3000 with these passcodes:")
-    print(f"    Coach       {settings.coach_passcode}")
-    print(f"    Player      {settings.player_passcode}   ({athlete_label})")
+    print("\n  Sign in at http://localhost:3000")
+    for email, display_name, role in logins:
+        print(f"    {role:<6} {email:<28} {display_name}")
+    print(f"    password: {DEV_DEMO_PASSWORD}")
     print()
     return 0
 

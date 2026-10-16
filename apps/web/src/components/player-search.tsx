@@ -59,43 +59,52 @@ export function PlayerSearch({ autoFocus = false }: { autoFocus?: boolean }) {
           }
         />
       ) : (
-        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-          {data.map((player) => (
-            <li key={player.id}>
-              <button
-                type="button"
-                data-testid="athlete-row"
-                onClick={() => router.push(`/coach/players/${player.id}`)}
-                className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/60"
-              >
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-muted text-xs font-semibold text-muted-foreground">
-                  {player.display_name
-                    .split(" ")
-                    .map((part) => part[0])
-                    .slice(0, 2)
-                    .join("")}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">
-                    {player.display_name}
+        <>
+          {/* The roster is ~490 athletes, so the count is the difference
+              between "this is everyone" and "this is the first page". */}
+          <p className="text-xs text-muted-foreground">
+            {debounced
+              ? `${data.length} ${data.length === 1 ? "match" : "matches"}`
+              : `${data.length} athletes`}
+          </p>
+          <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+            {data.map((player) => (
+              <li key={player.id}>
+                <button
+                  type="button"
+                  data-testid="athlete-row"
+                  onClick={() => router.push(`/coach/players/${player.id}`)}
+                  className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/60"
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-muted text-xs font-semibold text-muted-foreground">
+                    {player.display_name
+                      .split(" ")
+                      .map((part) => part[0])
+                      .slice(0, 2)
+                      .join("")}
                   </span>
-                  <span className="block text-xs text-muted-foreground">
-                    {[
-                      player.position,
-                      player.graduation_year && `Class of ${player.graduation_year}`,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || "Roster athlete"}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">
+                      {player.display_name}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      {[
+                        player.position,
+                        player.graduation_year && `Class of ${player.graduation_year}`,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "Roster athlete"}
+                    </span>
                   </span>
-                </span>
-                <Icon
-                  name="arrow"
-                  className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground"
-                />
-              </button>
-            </li>
-          ))}
-        </ul>
+                  <Icon
+                    name="arrow"
+                    className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground"
+                  />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

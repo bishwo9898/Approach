@@ -41,6 +41,9 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "users"
     __table_args__ = (
         UniqueConstraint("auth_provider", "auth_subject", name="uq_users_auth_identity"),
+        # The login identifier. Unique because two accounts sharing an address
+        # would make "which account did this person just claim?" unanswerable.
+        UniqueConstraint("email", name="uq_users_email"),
         Index("ix_users_organization_id_role", "organization_id", "role"),
     )
 
@@ -50,6 +53,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     auth_provider: Mapped[str] = mapped_column(String(32), nullable=False)
     auth_subject: Mapped[str] = mapped_column(String(255), nullable=False)
 
+    #: Stored lower-cased and trimmed -- see `services.accounts.normalize_email`.
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     display_name: Mapped[str] = mapped_column(String(200), nullable=False)
     role: Mapped[Role] = mapped_column(enum_column(Role, "role"), nullable=False)

@@ -17,6 +17,23 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
+class SignupGate(StrEnum):
+    """What an athlete must prove to claim the account provisioned for them.
+
+    Login emails are derived from names (`first.last@...`), so they are
+    guessable by anyone holding a team sheet. `OPEN` therefore means "whoever
+    types the address first owns the account", which is acceptable while the
+    app is being demonstrated on synthetic data and is not acceptable once real
+    athletes' sessions are in it. `CODE` closes that by requiring the one-time
+    code a coach hands out.
+    """
+
+    #: Email match alone is enough. Development and demos only.
+    OPEN = "open"
+    #: Email match plus the account's activation code.
+    CODE = "code"
+
+
 class Environment(StrEnum):
     DEVELOPMENT = "development"
     TEST = "test"
@@ -44,7 +61,16 @@ class Settings(BaseSettings):
     object_store_local_root: Path = Path("./var/objectstore")
     gcs_bucket: str | None = None
 
-    auth_provider: str = "passcode"
+    auth_provider: str = "local"
+    #: Domain of the login addresses the roster provisioner mints.
+    account_email_domain: str = "approach.com"
+    signup_gate: SignupGate = SignupGate.OPEN
+    #: How long a sign-in lasts before the browser must sign in again.
+    session_ttl_hours: int = 12
+    #: Consecutive failures before an account is locked, and for how long.
+    #: Low enough to stop online guessing, high enough to survive real typos.
+    login_max_attempts: int = 7
+    login_lockout_minutes: int = 15
     #: Shared passcodes, one per role. Development defaults only -- production
     #: refuses to start while they are still these values.
     coach_passcode: str = "coach"
@@ -71,6 +97,20 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _guard_production(self) -> Settings:
         """Fail fast rather than run production on development shortcuts."""
+        deployed = self.env in (Environment.STAGING, Environment.PRODUCTION)
+
+        # A deployed app is reachable by anyone with the link, so the signup
+        # gate must be a decision somebody made rather than a default they
+        # inherited. Staging is included because staging is the public demo.
+        chose_gate = "signup_gate" in self.model_fields_set
+        if deployed and self.auth_provider == "local" and not chose_gate:
+            raise ValueError(
+                f"BSA_SIGNUP_GATE must be set explicitly when BSA_ENV={self.env.value}. "
+                "Use 'code' to require the activation code a coach hands out, or "
+                "'open' to accept a matching email alone -- which lets anyone who "
+                "can guess first.last@domain claim that athlete's account."
+            )
+
         if self.env is Environment.PRODUCTION:
             if self.auth_provider == "dev":
                 raise ValueError(
@@ -100,6 +140,10 @@ class Settings(BaseSettings):
             if self.object_store_backend == "gcs" and not self.gcs_bucket:
                 raise ValueError("BSA_GCS_BUCKET is required when object store backend is gcs")
         return self
+
+    @property
+    def session_ttl_seconds(self) -> int:
+        return self.session_ttl_hours * 3600
 
     @property
     def is_development(self) -> bool:

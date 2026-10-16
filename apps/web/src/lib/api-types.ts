@@ -4,6 +4,94 @@
  */
 
 export interface paths {
+  "/api/v1/auth/activation/complete": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Complete
+     * @description Set the account's first password.
+     *
+     *     Deliberately does not return a session. The athlete goes to the sign-in
+     *     screen and uses the password they just chose, which is the only way they
+     *     find out straight away that they can reproduce it.
+     */
+    post: operations["complete_api_v1_auth_activation_complete_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/activation/lookup": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Lookup
+     * @description Check an email against the roster, before asking for a password.
+     *
+     *     Returns 404 `email_not_recognized` when it does not match, which is the one
+     *     place the API confirms whether an address is enrolled. See
+     *     `EmailNotRecognizedError` for why that is deliberate.
+     */
+    post: operations["lookup_api_v1_auth_activation_lookup_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Login */
+    post: operations["login_api_v1_auth_login_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/logout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Logout
+     * @description End this session only, leaving the person's other devices signed in.
+     *
+     *     Requires a valid credential so an unauthenticated caller cannot revoke a
+     *     token they happen to have seen in a log.
+     */
+    post: operations["logout_api_v1_auth_logout_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/dashboard/today": {
     parameters: {
       query?: never;
@@ -641,6 +729,38 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** ActivationCompleteIn */
+    ActivationCompleteIn: {
+      /** Code */
+      code?: string | null;
+      /** Email */
+      email: string;
+      /** Password */
+      password: string;
+      /** Password Confirmation */
+      password_confirmation: string;
+    };
+    /** ActivationLookupIn */
+    ActivationLookupIn: {
+      /** Code */
+      code?: string | null;
+      /** Email */
+      email: string;
+    };
+    /**
+     * ActivationTargetOut
+     * @description What the password screen is told. Nothing the address did not imply.
+     */
+    ActivationTargetOut: {
+      /** Email */
+      email: string;
+      /** First Name */
+      first_name: string;
+      /** Password Rules */
+      password_rules: string[];
+      /** Requires Code */
+      requires_code: boolean;
+    };
     /** AddSessionVideoIn */
     AddSessionVideoIn: {
       /** External Event Id */
@@ -979,6 +1099,13 @@ export interface components {
       /** Unresolved Players */
       unresolved_players: number;
     };
+    /** LoginIn */
+    LoginIn: {
+      /** Email */
+      email: string;
+      /** Password */
+      password: string;
+    };
     /**
      * MetricCategory
      * @enum {string}
@@ -1298,6 +1425,22 @@ export interface components {
       url: string;
     };
     /**
+     * SignInOut
+     * @description A new session. The token is the only copy -- it is not stored anywhere.
+     */
+    SignInOut: {
+      /** Display Name */
+      display_name: string;
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+      role: components["schemas"]["Role"];
+      /** Token */
+      token: string;
+    };
+    /**
      * SourceStatus
      * @description Confidence level of vendor-supplied data.
      *
@@ -1411,6 +1554,121 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  complete_api_v1_auth_activation_complete_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ActivationCompleteIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  lookup_api_v1_auth_activation_lookup_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ActivationLookupIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ActivationTargetOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  login_api_v1_auth_login_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LoginIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SignInOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  logout_api_v1_auth_logout_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   today_api_v1_dashboard_today_get: {
     parameters: {
       query?: {
