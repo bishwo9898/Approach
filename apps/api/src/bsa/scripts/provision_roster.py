@@ -49,9 +49,14 @@ from bsa.core.password import hash_password
 from bsa.db.models import (
     ExternalPlayerIdentity,
     HitEvent,
+    MetricObservation,
     Organization,
+    PersonalRecord,
+    PersonalRecordEvent,
     PitchEvent,
     Player,
+    SessionVideo,
+    SyncJob,
     User,
     UserCredential,
 )
@@ -60,12 +65,12 @@ from bsa.domain.enums import Role
 from bsa.domain.roster import (
     EmailPolicy,
     RosterAccount,
+    RosterAthlete,
     RosterPlan,
     RosterRow,
-    build_plan,
     collapse_spaces,
     email_local_part,
-    parse_rows,
+    plan_export,
 )
 from bsa.services import accounts
 
@@ -94,6 +99,12 @@ class Outcome:
     name_matches: list[tuple[RosterRow, Player]] = field(default_factory=list)
     #: (row, other addresses) -- this athlete now holds more than one account.
     extra_accounts: list[tuple[RosterAccount, tuple[str, ...]]] = field(default_factory=list)
+    #: Athletes the export had entered more than once.
+    merged: list[RosterAthlete] = field(default_factory=list)
+    #: Separate athlete records folded into one, from an earlier run.
+    players_folded: int = 0
+    #: (athlete, why) -- a record that could not be retired automatically.
+    merge_blocked: list[tuple[str, str]] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
     issued_codes: list[tuple[str, str, str]] = field(default_factory=list)
 
@@ -131,54 +142,146 @@ def _players_by_name(db: Session, org: Organization) -> dict[str, list[Player]]:
     return grouped
 
 
+def _carries_data(db: Session, player_id: uuid.UUID) -> bool:
+    """Whether anything at all has been recorded against this athlete.
+
+    Enumerated rather than inferred: every table carrying a `players.id` is
+    listed here, so adding one and forgetting it would be caught by the test
+    that walks the foreign keys rather than by a silent data loss.
+    """
+    checks = (
+        select(PitchEvent.id).where(PitchEvent.player_id == player_id),
+        select(PitchEvent.id).where(PitchEvent.batter_id == player_id),
+        select(HitEvent.id).where(HitEvent.player_id == player_id),
+        select(MetricObservation.id).where(MetricObservation.player_id == player_id),
+        select(PersonalRecord.id).where(PersonalRecord.player_id == player_id),
+        select(PersonalRecordEvent.id).where(PersonalRecordEvent.player_id == player_id),
+        select(SessionVideo.id).where(SessionVideo.player_id == player_id),
+        select(SyncJob.id).where(SyncJob.player_id == player_id),
+    )
+    return any(db.scalars(check.limit(1)).first() is not None for check in checks)
+
+
+def _claimed_account(db: Session, player_id: uuid.UUID) -> User | None:
+    """An account for this athlete that somebody has already set a password on."""
+    return db.scalars(
+        select(User)
+        .join(UserCredential, UserCredential.user_id == User.id)
+        .where(User.player_id == player_id, UserCredential.password_hash.is_not(None))
+    ).first()
+
+
+def _fold_into_one(
+    db: Session, org: Organization, players: list[Player], outcome: Outcome
+) -> Player:
+    """Collapse athletes the database created separately into a single record.
+
+    Only reached when a previous run split one person across several rows --
+    the roster said two vendor accounts, and only later did the merge rule say
+    they were one athlete. Moving the vendor ids onto one record is what makes
+    the next import land in one place.
+
+    Refuses to retire a record that carries data or a claimed account. Both
+    cases need a decision this script cannot make: moving sessions between
+    athletes, or taking away a login somebody is already using.
+    """
+    # The one with data wins; failing that the oldest, so the choice does not
+    # depend on dictionary ordering.
+    with_data = [p for p in players if _carries_data(db, p.id)]
+    ranked = sorted(players, key=lambda p: (p.created_at, str(p.id)))
+    survivor = with_data[0] if len(with_data) == 1 else ranked[0]
+
+    for player in players:
+        if player.id == survivor.id:
+            continue
+        blocker = (
+            "carries imported data"
+            if _carries_data(db, player.id)
+            else ("has a claimed account" if _claimed_account(db, player.id) else None)
+        )
+        if blocker is not None:
+            outcome.merge_blocked.append((player.display_name, blocker))
+            continue
+
+        for identity in db.scalars(
+            select(ExternalPlayerIdentity).where(ExternalPlayerIdentity.player_id == player.id)
+        ):
+            identity.player_id = survivor.id
+        # The account goes with the athlete it belonged to. Deactivated rather
+        # than deleted: the address stays taken, so it cannot be re-issued to
+        # somebody else, and the history of it stays readable.
+        for user in db.scalars(select(User).where(User.player_id == player.id)):
+            user.active = False
+            user.player_id = None
+        player.active = False
+        db.flush()
+        outcome.players_folded += 1
+
+    return survivor
+
+
 def _resolve_player(
     db: Session,
     org: Organization,
-    row: RosterRow,
+    athlete: RosterAthlete,
     *,
     existing_by_name: dict[str, list[Player]],
     link_existing: bool,
     ambiguous_name: bool,
     outcome: Outcome,
 ) -> Player:
-    """The athlete this roster row refers to, created if we have never seen it.
+    """The athlete these roster rows refer to, created if never seen before.
 
-    Matched on (provider, external id) -- the vendor key every later import also
-    matches on. That is the only identifier trusted here.
+    Matched on (provider, external id) -- the vendor key every later import
+    also matches on, and the only identifier trusted here. A merged athlete
+    brings several of those, which is exactly how data filed under either
+    TrackMan account ends up on one person.
     """
-    identity = db.scalars(
-        select(ExternalPlayerIdentity).where(
-            ExternalPlayerIdentity.organization_id == org.id,
-            ExternalPlayerIdentity.provider == row.provider,
-            ExternalPlayerIdentity.external_id == row.external_id,
-        )
-    ).first()
-    if identity is not None:
-        known = db.get(Player, identity.player_id)
-        if known is not None:
-            return known
-
-    name_key = collapse_spaces(row.full_name).lower()
-    candidates = existing_by_name.get(name_key, [])
+    known: dict[uuid.UUID, Player] = {}
+    mapped: set[tuple[str, str]] = set()
+    for provider, external_id in athlete.identities:
+        identity = db.scalars(
+            select(ExternalPlayerIdentity).where(
+                ExternalPlayerIdentity.organization_id == org.id,
+                ExternalPlayerIdentity.provider == provider,
+                ExternalPlayerIdentity.external_id == external_id,
+            )
+        ).first()
+        if identity is None:
+            continue
+        mapped.add((provider, external_id))
+        found = db.get(Player, identity.player_id)
+        if found is not None:
+            known[found.id] = found
 
     player: Player | None = None
-    # Linking requires an unambiguous match on both sides: exactly one existing
-    # athlete with this name, and a name used by exactly one roster row. Either
-    # being ambiguous is precisely the case where a link could attach one
-    # athlete's TrackMan account to another athlete.
-    if candidates and not ambiguous_name and len(candidates) == 1:
-        if link_existing:
-            player = candidates[0]
-            outcome.players_linked += 1
-        else:
-            outcome.name_matches.append((row, candidates[0]))
+    if len(known) > 1:
+        player = _fold_into_one(db, org, list(known.values()), outcome)
+    elif known:
+        player = next(iter(known.values()))
+
+    name_key = collapse_spaces(athlete.full_name).lower()
 
     if player is None:
+        candidates = existing_by_name.get(name_key, [])
+        # Linking requires an unambiguous match on both sides: exactly one
+        # existing athlete with this name, and a name used by exactly one
+        # person in the export. Either being ambiguous is precisely the case
+        # where a link could attach one athlete's TrackMan account to another.
+        if candidates and not ambiguous_name and len(candidates) == 1:
+            if link_existing:
+                player = candidates[0]
+                outcome.players_linked += 1
+            else:
+                outcome.name_matches.append((athlete.primary, candidates[0]))
+
+    if player is None:
+        primary = athlete.primary
         player = Player(
             organization_id=org.id,
-            first_name=row.first_name,
-            last_name=row.last_name,
-            date_of_birth=row.date_of_birth,
+            first_name=primary.first_name,
+            last_name=primary.last_name,
+            date_of_birth=primary.date_of_birth,
             active=True,
         )
         db.add(player)
@@ -186,18 +289,24 @@ def _resolve_player(
         outcome.players_created += 1
         existing_by_name.setdefault(name_key, []).append(player)
 
-    db.add(
-        ExternalPlayerIdentity(
-            organization_id=org.id,
-            player_id=player.id,
-            provider=row.provider,
-            external_id=row.external_id,
-            external_display_name=row.full_name,
-            player_metadata={"source": "roster_export", "line": row.line},
+    for row in athlete.rows:
+        if (row.provider, row.external_id) in mapped:
+            continue
+        db.add(
+            ExternalPlayerIdentity(
+                organization_id=org.id,
+                player_id=player.id,
+                provider=row.provider,
+                external_id=row.external_id,
+                external_display_name=row.full_name,
+                player_metadata={"source": "roster_export", "line": row.line},
+            )
         )
-    )
+        outcome.identities_created += 1
     db.flush()
-    outcome.identities_created += 1
+
+    if athlete.is_merged:
+        outcome.merged.append(athlete)
     return player
 
 
@@ -300,7 +409,7 @@ def apply_plan(
         player = _resolve_player(
             db,
             org,
-            account.row,
+            account.athlete,
             existing_by_name=existing_by_name,
             link_existing=link_existing,
             ambiguous_name=bool(account.shares_name_with),
@@ -512,14 +621,33 @@ def print_report(plan: RosterPlan, outcome: Outcome | None, *, dry_run: bool) ->
     print(f"  Roster            {total} entries, {len(plan.claimable)} with a login address")
     print(f"  Email policy      {plan.policy.value} @{plan.domain}")
 
+    merged = plan.merged
+    if merged:
+        print()
+        print(f"  Entered twice     {len(merged)} athletes appear under more than one TrackMan id")
+        print("                    same name and same date of birth, so one person")
+        thin = [a for a in merged if a.shared_birth_date]
+        for athlete in merged[:6]:
+            ids = ", ".join(external for _, external in athlete.identities)
+            mark = "  <- on a date the export repeats" if athlete.shared_birth_date else ""
+            print(f"    {athlete.name_key:<24} {ids}{mark}")
+        if len(merged) > 6:
+            print(f"    ... and {len(merged) - 6} more")
+        if thin:
+            print()
+            print(f"  CHECK THESE       {len(thin)} of those merges rest on a repeated date")
+            print("                    the date is a bulk-upload default, so only the")
+            print("                    name is really saying they are the same person")
+
     groups = plan.collision_groups
     if groups:
         print()
-        print(f"  Shared names      {len(groups)} names used by more than one roster entry")
-        for key, rows in list(groups.items())[:5]:
+        print(f"  Shared names      {len(groups)} names used by more than one athlete")
+        for key, athletes in list(groups.items())[:5]:
             detail = ", ".join(
-                f"{r.external_id} ({r.date_of_birth.isoformat() if r.date_of_birth else 'no dob'})"
-                for r in rows
+                f"{a.primary.external_id} "
+                f"({a.date_of_birth.isoformat() if a.date_of_birth else 'no dob'})"
+                for a in athletes
             )
             print(f"    {key:<24} {detail}")
         if len(groups) > 5:
@@ -532,6 +660,8 @@ def print_report(plan: RosterPlan, outcome: Outcome | None, *, dry_run: bool) ->
 
     print()
     print(f"  Athletes created  {outcome.players_created}")
+    if outcome.players_folded:
+        print(f"  Athletes folded   {outcome.players_folded} duplicate records retired")
     if outcome.players_linked:
         print(f"  Athletes linked   {outcome.players_linked} (existing records, --link-existing)")
     print(f"  Identities        {outcome.identities_created} TrackMan ids mapped")
@@ -547,6 +677,13 @@ def print_report(plan: RosterPlan, outcome: Outcome | None, *, dry_run: bool) ->
         print("                    they exist as athletes; their data will still import")
     if outcome.email_taken:
         print(f"  ADDRESS IN USE    {len(outcome.email_taken)} entries")
+    if outcome.merge_blocked:
+        print()
+        print(f"  COULD NOT FOLD    {len(outcome.merge_blocked)} duplicate records kept separate")
+        for name, reason in outcome.merge_blocked[:5]:
+            print(f"    {name:<24} {reason}")
+        print("                    moving sessions between athletes, or taking away a")
+        print("                    login in use, is not this script's decision to make")
     if outcome.extra_accounts:
         print()
         print(f"  Second account    {len(outcome.extra_accounts)} athletes now hold more than one")
@@ -600,6 +737,15 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--keep-duplicates",
+        action="store_true",
+        help=(
+            "one athlete per vendor row, as the export literally states it. "
+            "By default, rows with an identical name AND date of birth are "
+            "treated as one athlete entered twice, which is the facility's rule."
+        ),
+    )
+    parser.add_argument(
         "--codes",
         action="store_true",
         help="issue an activation code per unclaimed account and write them to var/",
@@ -640,8 +786,12 @@ def main() -> int:
         return 2
 
     records = read_export(args.csv)
-    rows, skipped = parse_rows(records)
-    plan = build_plan(rows, domain=settings.account_email_domain, policy=args.emails)
+    plan, skipped = plan_export(
+        records,
+        domain=settings.account_email_domain,
+        policy=args.emails,
+        merge_duplicates=not args.keep_duplicates,
+    )
 
     if args.dry_run:
         print_report(plan, None, dry_run=True)

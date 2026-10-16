@@ -151,21 +151,37 @@ cd apps/api
     --emails birth-year --link-existing --codes --demo-accounts
 ```
 
-Each athlete gets `firstname.lastname@approach.com`. On the real 488-athlete
-export, 63 names belong to more than one TrackMan account — one of them to
-four — and a duplicated name is a duplicated address, which would let one
-athlete read another's sessions. So:
+Each athlete gets `firstname.lastname@approach.com`.
+
+**Rows are not people.** The real export has 488 rows but 482 athletes, because
+TrackMan entered some of them twice. Identical first name, last name *and* date
+of birth is treated as one person holding two TrackMan ids — so data filed under
+either id reaches the same athlete, instead of splitting across two half-empty
+profiles. Anything weaker stays two people: a shared name is not enough, and
+neither is a shared birth *year*. `--keep-duplicates` turns the merging off.
+
+Merges are printed, and ones resting on a birth date the export repeats dozens
+of times (a bulk-upload default, not a birthday) are flagged separately — there
+the name is doing all the work.
+
+What is left is 59 names shared by genuinely different athletes, and a
+duplicated name is a duplicated address, which would let one of them read the
+other's sessions. So:
 
 | flag | what it does |
 |---|---|
 | *(default)* | only unambiguous names get an address; the rest are listed in `var/roster-review-*.csv` for a coach to decide |
-| `--emails birth-year` | shared names get their birth year appended (`first.last.2011@`), which needs a coach to tell each athlete which year is theirs. 470 of 488 then get an address; the remaining 18 share a name *and* a birth year |
+| `--emails birth-year` | shared names get their birth year appended (`first.last.2011@`), which needs a coach to tell each athlete which year is theirs. 476 of 482 then get an address; the remaining 6 share a name *and* a birth year |
 | `--link-existing` | attach a roster id to an athlete already in the database when exactly one of each matches by name. Off by default: a wrong link shows one athlete another's data |
 | `--codes` | issue each unclaimed account a one-time activation code, written to `var/activation-codes-*.csv`. The database keeps only hashes, so that file is the only copy |
+| `--keep-duplicates` | one athlete per vendor row, as the export literally states it |
 | `--demo-accounts` | give a coach login and one athlete login a known password, for testing |
 
 Re-running is safe: athletes are matched on their TrackMan id, accounts on the
-address they were issued, and nothing already claimed is touched.
+address they were issued, and nothing already claimed is touched. If an earlier
+run created one person as two athletes, a later run folds them together — unless
+the record it would retire carries imported data or a claimed login, which is a
+decision a script should not make on its own.
 
 ### Who may claim an account
 

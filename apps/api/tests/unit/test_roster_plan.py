@@ -15,12 +15,14 @@ import pytest
 from bsa.domain.roster import (
     EmailPolicy,
     RosterError,
-    build_plan,
     collapse_spaces,
     email_local_part,
+    group_rows,
     parse_date_of_birth,
     parse_player_id,
     parse_rows,
+    plan_export,
+    repeated_birth_dates,
     split_name,
 )
 
@@ -38,13 +40,18 @@ def record(name: str, dob: str = "Jul. 4  2010", player_id: str = "") -> dict[st
     }
 
 
-def plan_for(records: list[dict[str, str]], policy: EmailPolicy = EmailPolicy.UNIQUE_ONLY):  # type: ignore[no-untyped-def]
-    rows, skipped = parse_rows(records)
-    return build_plan(rows, domain=DOMAIN, policy=policy), skipped
+def plan_for(  # type: ignore[no-untyped-def]
+    records: list[dict[str, str]],
+    policy: EmailPolicy = EmailPolicy.UNIQUE_ONLY,
+    *,
+    merge_duplicates: bool = True,
+):
+    return plan_export(records, domain=DOMAIN, policy=policy, merge_duplicates=merge_duplicates)
 
 
 def emails(plan) -> dict[str, str | None]:  # type: ignore[no-untyped-def]
-    return {a.row.external_id: a.email for a in plan.accounts}
+    """Address per athlete, keyed by their first vendor id."""
+    return {a.athlete.primary.external_id: a.email for a in plan.accounts}
 
 
 # -- field parsing -----------------------------------------------------------
@@ -175,11 +182,11 @@ class TestUniqueNames:
         assert plan.accounts[0].is_claimable
         assert plan.accounts[0].blocked_reason is None
 
-    def test_spelling_variants_of_one_name_collide(self) -> None:
-        """ "Sam  Okafor " and "Sam Okafor" are the same address, so they are
-        the same collision -- not two accounts."""
+    def test_spelling_variants_with_one_birth_date_are_one_person(self) -> None:
+        """ "Sam  Okafor " and "Sam Okafor", same birth date: one athlete."""
         plan, _ = plan_for([record("Sam  Okafor "), record("Sam Okafor")])
-        assert plan.blocked and not plan.claimable
+        assert len(plan.accounts) == 1
+        assert plan.accounts[0].email == "sam.okafor@approach.com"
 
 
 class TestSharedNames:
@@ -208,19 +215,24 @@ class TestSharedNames:
     def test_the_block_explains_itself_to_a_coach(self, shared) -> None:  # type: ignore[no-untyped-def]
         reason = shared.accounts[0].blocked_reason
         assert reason is not None
-        assert "2 roster entries" in reason and "Devin Ruiz" in reason
+        assert "2 different athletes" in reason and "Devin Ruiz" in reason
 
     def test_collisions_are_reported_as_groups(self, shared) -> None:  # type: ignore[no-untyped-def]
         groups = shared.collision_groups
         assert list(groups) == ["devin.ruiz"]
-        assert {r.external_id for r in groups["devin.ruiz"]} == {"11", "22"}
+        assert {a.primary.external_id for a in groups["devin.ruiz"]} == {"11", "22"}
 
     def test_unaffected_athletes_are_untouched(self, shared) -> None:  # type: ignore[no-untyped-def]
         assert len(shared.claimable) == 1
 
-    def test_four_entries_sharing_a_name_all_block(self) -> None:
+    def test_four_different_athletes_sharing_a_name_all_block(self) -> None:
         """The real export has one name used by four vendor accounts."""
-        plan, _ = plan_for([record("Alex Stone", player_id=f"{i} TrackMan") for i in range(4)])
+        plan, _ = plan_for(
+            [
+                record("Alex Stone", f"Mar. {day}  201{day}", f"{day} TrackMan")
+                for day in range(1, 5)
+            ]
+        )
         assert len(plan.blocked) == 4
 
 
@@ -282,6 +294,153 @@ class TestBirthYearPolicy:
         assert emails(plan)["33"] is None
 
 
+class TestEnteredTwice:
+    """The facility's rule: identical name *and* birth date is one person.
+
+    TrackMan entered some athletes twice. Merging those rows is what stops one
+    person owning two profiles and their sessions splitting across both. The
+    rule is deliberately narrow -- everything weaker stays two people.
+    """
+
+    def test_identical_name_and_birth_date_is_one_athlete(self) -> None:
+        plan, _ = plan_for(
+            [
+                record("Riley Chen", "Feb. 24  2015", "11 TrackMan"),
+                record("Riley Chen", "Feb. 24  2015", "22 TrackMan"),
+            ]
+        )
+        assert len(plan.accounts) == 1
+        athlete = plan.accounts[0].athlete
+        assert athlete.is_merged
+        assert athlete.identities == (("trackman", "11"), ("trackman", "22"))
+
+    def test_the_merged_athlete_gets_the_plain_address(self) -> None:
+        """The name no longer identifies two people, so nothing is ambiguous."""
+        plan, _ = plan_for(
+            [
+                record("Riley Chen", "Feb. 24  2015", "11 TrackMan"),
+                record("Riley Chen", "Feb. 24  2015", "22 TrackMan"),
+            ]
+        )
+        assert plan.accounts[0].email == "riley.chen@approach.com"
+        assert not plan.blocked
+
+    def test_four_rows_can_be_two_people(self) -> None:
+        """Two duplicated athletes who happen to share a name."""
+        plan, _ = plan_for(
+            [
+                record("Alex Stone", "Feb. 24  2015", "11 TrackMan"),
+                record("Alex Stone", "Feb. 24  2015", "22 TrackMan"),
+                record("Alex Stone", "Aug. 3  2011", "33 TrackMan"),
+                record("Alex Stone", "Aug. 3  2011", "44 TrackMan"),
+            ],
+            EmailPolicy.BIRTH_YEAR,
+        )
+        assert len(plan.accounts) == 2
+        assert all(a.athlete.is_merged for a in plan.accounts)
+        assert emails(plan) == {
+            "11": "alex.stone.2015@approach.com",
+            "33": "alex.stone.2011@approach.com",
+        }
+
+    def test_a_different_birth_date_is_a_different_person(self) -> None:
+        """One day apart is still two athletes. The rule is exact or nothing."""
+        plan, _ = plan_for(
+            [
+                record("Devin Ruiz", "Jul. 28  2006", "11 TrackMan"),
+                record("Devin Ruiz", "Jul. 29  2006", "22 TrackMan"),
+            ]
+        )
+        assert len(plan.accounts) == 2
+        assert not any(a.athlete.is_merged for a in plan.accounts)
+
+    def test_a_shared_birth_year_is_not_enough(self) -> None:
+        plan, _ = plan_for(
+            [
+                record("Devin Ruiz", "May. 24  2009", "11 TrackMan"),
+                record("Devin Ruiz", "Jul. 24  2009", "22 TrackMan"),
+            ]
+        )
+        assert len(plan.accounts) == 2
+
+    def test_rows_with_no_birth_date_are_never_merged(self) -> None:
+        """The evidence the rule rests on is missing, so it does not apply."""
+        plan, _ = plan_for(
+            [
+                record("Devin Ruiz", "-", "11 TrackMan"),
+                record("Devin Ruiz", "-", "22 TrackMan"),
+            ]
+        )
+        assert len(plan.accounts) == 2
+
+    def test_a_different_name_is_a_different_person(self) -> None:
+        plan, _ = plan_for(
+            [
+                record("Devin Ruiz", "Feb. 24  2015", "11 TrackMan"),
+                record("Devin Ruis", "Feb. 24  2015", "22 TrackMan"),
+            ]
+        )
+        assert len(plan.accounts) == 2
+
+    def test_merging_can_be_turned_off(self) -> None:
+        """One athlete per vendor row, as the export literally states it."""
+        rows = [
+            record("Riley Chen", "Feb. 24  2015", "11 TrackMan"),
+            record("Riley Chen", "Feb. 24  2015", "22 TrackMan"),
+        ]
+        plan, _ = plan_for(rows, merge_duplicates=False)
+        assert len(plan.accounts) == 2
+        assert plan.blocked
+
+    def test_merges_resting_on_a_repeated_date_are_flagged(self) -> None:
+        """A date the export repeats is a bulk-upload default, not a birthday.
+
+        The merge then rests on the name alone, which is weaker than the rule
+        claims. It still merges -- that is the facility's call -- but it says so.
+        """
+        crowd = [
+            record(f"Athlete Number{n}", "Jul. 29  2006", f"{n}00 TrackMan") for n in range(1, 8)
+        ]
+        twice = [
+            record("Riley Chen", "Jul. 29  2006", "11 TrackMan"),
+            record("Riley Chen", "Jul. 29  2006", "22 TrackMan"),
+        ]
+        plan, _ = plan_for(crowd + twice)
+        merged = plan.merged
+        assert len(merged) == 1
+        assert merged[0].shared_birth_date is True
+
+    def test_a_genuinely_rare_date_is_not_flagged(self) -> None:
+        twice = [
+            record("Riley Chen", "Feb. 24  2015", "11 TrackMan"),
+            record("Riley Chen", "Feb. 24  2015", "22 TrackMan"),
+        ]
+        plan, _ = plan_for(twice)
+        assert plan.merged[0].shared_birth_date is False
+
+
+def test_repeated_birth_dates_finds_the_bulk_upload_defaults() -> None:
+    rows, _ = parse_rows(
+        [record(f"Athlete Number{n}", "Jul. 29  2006", f"{n} TrackMan") for n in range(6)]
+        + [record("Jordan Avery", "Mar. 3  2012", "99 TrackMan")]
+    )
+    assert repeated_birth_dates(rows) == {date(2006, 7, 29)}
+
+
+def test_grouping_preserves_the_order_of_the_file() -> None:
+    """A coach reads the report next to the export, so they must agree."""
+    rows, _ = parse_rows(
+        [
+            record("Jordan Avery", "Jan. 1  2010", "11 TrackMan"),
+            record("Riley Chen", "Feb. 2  2011", "22 TrackMan"),
+            record("Jordan Avery", "Jan. 1  2010", "33 TrackMan"),
+            record("Sam Okafor", "Mar. 3  2012", "44 TrackMan"),
+        ]
+    )
+    athletes = group_rows(rows)
+    assert [a.name_key for a in athletes] == ["jordan.avery", "riley.chen", "sam.okafor"]
+
+
 def test_the_decision_does_not_depend_on_file_order() -> None:
     """File order is not evidence of who an address belongs to.
 
@@ -300,10 +459,13 @@ def test_the_decision_does_not_depend_on_file_order() -> None:
 
 def test_no_plan_ever_issues_one_address_twice() -> None:
     """The invariant the whole module exists to hold, asserted directly."""
-    from bsa.domain.roster import RosterAccount, _assert_unique_emails
+    from bsa.domain.roster import RosterAccount, RosterAthlete, _assert_unique_emails
 
     rows, _ = parse_rows([record("Jordan Avery", player_id=f"{i} TrackMan") for i in (1, 2)])
-    duplicated = [RosterAccount(row=row, email="jordan.avery@approach.com") for row in rows]
+    duplicated = [
+        RosterAccount(athlete=RosterAthlete(rows=(row,)), email="jordan.avery@approach.com")
+        for row in rows
+    ]
     with pytest.raises(RosterError, match="duplicate login email"):
         _assert_unique_emails(duplicated)
 

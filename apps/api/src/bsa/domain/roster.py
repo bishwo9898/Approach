@@ -12,14 +12,26 @@ rows share the birth date "Jul. 29 2006" -- a placeholder a bulk upload left
 behind, not a birthday. So neither the name nor the date of birth identifies a
 person on its own.
 
+Taken *together* they do, in one direction only. The facility's rule, from the
+people who know these athletes: **identical first name, last name and date of
+birth means TrackMan entered the same person twice.** Those rows become one
+athlete holding both vendor ids, which is what `ExternalPlayerIdentity` was
+always shaped for. Everything weaker than that -- a shared name, a shared birth
+*year* -- is still two people until a human says otherwise.
+
+The one place this rule is thin is called out rather than hidden: when the date
+the rows agree on is one the export repeats dozens of times, it is a default
+and not a birthday, so the merge rests almost entirely on the name.
+`RosterAthlete.shared_birth_date` marks those, and the provisioner prints them.
+
 Login emails are derived from names, so a duplicated name is a duplicated
 email, and a duplicated email means one athlete could claim another athlete's
 account and read their data. This module therefore:
 
-* creates one player per vendor row and **never merges two rows into one
-  athlete**, because the vendor is asserting these are distinct accounts and
-  collapsing them would attribute one athlete's data to another;
-* issues a claimable email only when the name identifies exactly one row;
+* creates one player per *person*, merging vendor rows only on the exact rule
+  above and never on anything looser, because collapsing two athletes would
+  attribute one's data to the other;
+* issues a claimable email only when the name identifies exactly one person;
 * reports every collision instead of resolving it quietly, so a coach -- who
   knows which TrackMan account belongs to which kid -- makes that call.
 
@@ -81,14 +93,63 @@ class RosterRow:
 
 
 @dataclass(frozen=True, slots=True)
-class RosterAccount:
-    """A row, plus the account decision made for it."""
+class RosterAthlete:
+    """One person, and every vendor account the export holds for them.
 
-    row: RosterRow
+    Usually a single row. More than one when `group_rows` found the export had
+    entered the same athlete twice, in which case the resulting player carries
+    every one of those TrackMan ids -- so data arriving under either id lands on
+    the same athlete, which is the whole point of merging them.
+    """
+
+    #: At least one, in the order they appear in the export.
+    rows: tuple[RosterRow, ...]
+    #: True when the birth date these rows agree on is one the export repeats
+    #: many times over. It is then a bulk-upload default rather than a birthday,
+    #: so the merge is resting almost entirely on the name being identical.
+    shared_birth_date: bool = False
+
+    @property
+    def primary(self) -> RosterRow:
+        """The row the athlete's details come from: the first in the file."""
+        return self.rows[0]
+
+    @property
+    def full_name(self) -> str:
+        return self.primary.full_name
+
+    @property
+    def name_key(self) -> str:
+        return self.primary.name_key
+
+    @property
+    def date_of_birth(self) -> date | None:
+        return self.primary.date_of_birth
+
+    @property
+    def identities(self) -> tuple[tuple[str, str], ...]:
+        """Every (provider, external id) this person should answer to."""
+        return tuple((row.provider, row.external_id) for row in self.rows)
+
+    @property
+    def is_merged(self) -> bool:
+        return len(self.rows) > 1
+
+
+@dataclass(frozen=True, slots=True)
+class RosterAccount:
+    """A person, plus the account decision made for them."""
+
+    athlete: RosterAthlete
     #: None when no email could be issued safely -- see `blocked_reason`.
     email: str | None
-    #: Other rows sharing this row's name. Empty when the name is unique.
-    shares_name_with: tuple[RosterRow, ...] = ()
+    #: Other *people* sharing this name. Empty when the name identifies one.
+    shares_name_with: tuple[RosterAthlete, ...] = ()
+
+    @property
+    def row(self) -> RosterRow:
+        """The athlete's first roster row, for reporting."""
+        return self.athlete.primary
 
     @property
     def is_claimable(self) -> bool:
@@ -101,10 +162,10 @@ class RosterAccount:
         others = len(self.shares_name_with)
         if others:
             return (
-                f"{others + 1} roster entries are named {self.row.full_name!r}; "
+                f"{others + 1} different athletes are named {self.athlete.full_name!r}; "
                 "a coach must say which TrackMan account belongs to which athlete"
             )
-        return f"no usable email could be formed from {self.row.raw_name!r}"
+        return f"no usable email could be formed from {self.athlete.primary.raw_name!r}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -124,13 +185,18 @@ class RosterPlan:
         return tuple(a for a in self.accounts if not a.is_claimable)
 
     @property
-    def collision_groups(self) -> dict[str, tuple[RosterRow, ...]]:
-        """Name key -> every row carrying that name, for names used twice."""
-        groups: dict[str, list[RosterRow]] = defaultdict(list)
+    def collision_groups(self) -> dict[str, tuple[RosterAthlete, ...]]:
+        """Name key -> every athlete carrying that name, for names shared."""
+        groups: dict[str, list[RosterAthlete]] = defaultdict(list)
         for account in self.accounts:
             if account.shares_name_with:
-                groups[account.row.name_key].append(account.row)
-        return {key: tuple(rows) for key, rows in sorted(groups.items())}
+                groups[account.athlete.name_key].append(account.athlete)
+        return {key: tuple(found) for key, found in sorted(groups.items())}
+
+    @property
+    def merged(self) -> tuple[RosterAthlete, ...]:
+        """Athletes the export had entered more than once."""
+        return tuple(a.athlete for a in self.accounts if a.athlete.is_merged)
 
 
 # -- parsing -----------------------------------------------------------------
@@ -260,34 +326,94 @@ def parse_rows(records: list[dict[str, str]]) -> tuple[list[RosterRow], list[str
     return rows, skipped
 
 
+# -- grouping rows into people -----------------------------------------------
+
+#: A birth date carried by at least this many roster entries is a bulk-upload
+#: default, not a birthday. With ~490 athletes spread over twenty years of
+#: dates, five sharing one day does not happen by chance -- the real export has
+#: one date on 109 rows and another on 55.
+PLACEHOLDER_DATE_THRESHOLD = 5
+
+
+def repeated_birth_dates(
+    rows: list[RosterRow], *, threshold: int = PLACEHOLDER_DATE_THRESHOLD
+) -> set[date]:
+    """Birth dates the export repeats often enough to be defaults."""
+    counts: dict[date, int] = defaultdict(int)
+    for row in rows:
+        if row.date_of_birth is not None:
+            counts[row.date_of_birth] += 1
+    return {day for day, count in counts.items() if count >= threshold}
+
+
+def group_rows(rows: list[RosterRow], *, merge_duplicates: bool = True) -> list[RosterAthlete]:
+    """Collapse rows that are the same person into one athlete each.
+
+    The rule, and nothing looser: identical name **and** identical date of
+    birth. A shared name alone is two people. A shared birth *year* is two
+    people. Rows with no readable birth date are never merged, because the
+    evidence the rule depends on is missing.
+
+    `merge_duplicates=False` turns this off entirely -- one athlete per vendor
+    row, as the export literally states it.
+    """
+    if not merge_duplicates:
+        return [RosterAthlete(rows=(row,)) for row in rows]
+
+    defaults = repeated_birth_dates(rows)
+    buckets: dict[tuple[str, date], list[RosterRow]] = {}
+    first_seen: dict[tuple[str, date], int] = {}
+    alone: list[tuple[int, RosterRow]] = []
+
+    for index, row in enumerate(rows):
+        if row.date_of_birth is None:
+            alone.append((index, row))
+            continue
+        key = (row.name_key, row.date_of_birth)
+        buckets.setdefault(key, []).append(row)
+        first_seen.setdefault(key, index)
+
+    # Emitted in the order each athlete first appears, so the plan reads in the
+    # same order as the file a coach is looking at.
+    ordered: list[tuple[int, RosterAthlete]] = [
+        (
+            first_seen[key],
+            RosterAthlete(rows=tuple(group), shared_birth_date=key[1] in defaults),
+        )
+        for key, group in buckets.items()
+    ]
+    ordered += [(index, RosterAthlete(rows=(row,))) for index, row in alone]
+    return [athlete for _, athlete in sorted(ordered, key=lambda entry: entry[0])]
+
+
 # -- planning ----------------------------------------------------------------
 
 
 def build_plan(
-    rows: list[RosterRow],
+    athletes: list[RosterAthlete],
     *,
     domain: str,
     policy: EmailPolicy = EmailPolicy.UNIQUE_ONLY,
 ) -> RosterPlan:
-    """Decide an email, or deliberately no email, for every row."""
-    by_name: dict[str, list[RosterRow]] = defaultdict(list)
-    for row in rows:
-        by_name[row.name_key].append(row)
+    """Decide an email, or deliberately no email, for every athlete."""
+    by_name: dict[str, list[RosterAthlete]] = defaultdict(list)
+    for athlete in athletes:
+        by_name[athlete.name_key].append(athlete)
 
-    # Two passes. The first proposes an address for every row; the second
-    # issues it only if exactly one row proposed it. Deciding in one pass would
-    # mean the row that happened to come first in the file won the address, and
-    # file order is not evidence of who the address belongs to.
+    # Two passes. The first proposes an address for every athlete; the second
+    # issues it only if exactly one athlete proposed it. Deciding in one pass
+    # would mean whoever came first in the file won the address, and file order
+    # is not evidence of who the address belongs to.
     proposed: list[str | None] = []
-    for row in rows:
-        siblings_count = len(by_name[row.name_key]) - 1
-        local = row.name_key
+    for athlete in athletes:
+        others = len(by_name[athlete.name_key]) - 1
+        local = athlete.name_key
         if not local:
             proposed.append(None)
-        elif siblings_count == 0:
+        elif others == 0:
             proposed.append(f"{local}@{domain}".lower())
-        elif policy is EmailPolicy.BIRTH_YEAR and row.date_of_birth is not None:
-            proposed.append(f"{local}.{row.date_of_birth.year}@{domain}".lower())
+        elif policy is EmailPolicy.BIRTH_YEAR and athlete.date_of_birth is not None:
+            proposed.append(f"{local}.{athlete.date_of_birth.year}@{domain}".lower())
         else:
             proposed.append(None)
 
@@ -298,15 +424,30 @@ def build_plan(
 
     accounts = [
         RosterAccount(
-            row=row,
+            athlete=athlete,
             email=(candidate if candidate and wanted[candidate] == 1 else None),
-            shares_name_with=tuple(o for o in by_name[row.name_key] if o is not row),
+            shares_name_with=tuple(
+                other for other in by_name[athlete.name_key] if other is not athlete
+            ),
         )
-        for row, candidate in zip(rows, proposed, strict=True)
+        for athlete, candidate in zip(athletes, proposed, strict=True)
     ]
 
     _assert_unique_emails(accounts)
     return RosterPlan(accounts=tuple(accounts), policy=policy, domain=domain)
+
+
+def plan_export(
+    records: list[dict[str, str]],
+    *,
+    domain: str,
+    policy: EmailPolicy = EmailPolicy.UNIQUE_ONLY,
+    merge_duplicates: bool = True,
+) -> tuple[RosterPlan, list[str]]:
+    """Parse, group and plan an export in one call. Returns (plan, skipped)."""
+    rows, skipped = parse_rows(records)
+    athletes = group_rows(rows, merge_duplicates=merge_duplicates)
+    return build_plan(athletes, domain=domain, policy=policy), skipped
 
 
 def _assert_unique_emails(accounts: list[RosterAccount]) -> None:

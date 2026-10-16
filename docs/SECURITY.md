@@ -148,6 +148,28 @@ access, malformed credentials, valid-but-unknown credentials, player reaching
 another athlete across six endpoints, player reaching coach endpoints, coach
 attempting an admin-only action, and cross-organization access in both directions.
 
+### Merging two vendor rows into one athlete
+
+The roster export lists vendor accounts, not people, and TrackMan entered some
+athletes twice. Those rows are merged into one athlete on an exact rule the
+facility set: **identical first name, last name and date of birth.**
+
+This is the one place the system collapses two identities, so the limits are
+deliberate:
+
+- A shared name alone is never enough. Neither is a shared birth *year*.
+- A row with no readable birth date is never merged — the evidence is missing.
+- A merge that rests on a date the export repeats dozens of times (a bulk-upload
+  default rather than a birthday) is flagged separately in the report, because
+  there the name is carrying the whole claim.
+- Merging two athletes who already exist separately will not retire a record
+  that carries imported data or a claimed login. Moving sessions between
+  athletes, and taking away a login in use, are decisions a provisioning script
+  must not make by itself; it reports them instead.
+
+Retired records are deactivated, never deleted, so the history stays readable
+and the address stays taken rather than becoming re-issuable to somebody else.
+
 ## Identity integrity
 
 An athlete is resolved **only** by an explicit `(provider, external_id)` row.
