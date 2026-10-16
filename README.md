@@ -146,6 +146,22 @@ ingests the session, and prints a coach and an athlete login.
 
 Re-run it with the next athlete's export as more data arrives; no code changes.
 
+**On the Docker stack, ingest inside the container.** An import writes the raw
+file to the object store *and* a row to the database, and those must be the same
+machine's. Running the script on the host against the container's database
+splits them: the rows land in Postgres, the payload lands in `apps/api/var/`,
+and the API later reports `0 imports reprocessed` because it cannot find a file
+it is certain it wrote.
+
+```bash
+cp "CSV files/<athlete>/<export>.csv" imports/     # mounted read-only at /data/imports
+docker compose exec api python -m bsa.scripts.ingest /data/imports/<export>.csv
+```
+
+Provisioning accounts has no such constraint — it touches only the database — so
+`BSA_DATABASE_URL=... python -m bsa.scripts.provision_roster ...` from the host
+is fine against either stack.
+
 ## Accounts
 
 Athletes do not sign themselves up. The facility provisions an account for every
