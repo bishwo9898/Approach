@@ -213,6 +213,23 @@ run created one person as two athletes, a later run folds them together — unle
 the record it would retire carries imported data or a claimed login, which is a
 decision a script should not make on its own.
 
+### Limiting the active roster
+
+Keep real names outside the repository. Create a CSV with `first_name,last_name`;
+when a name is shared, add `date_of_birth` (YYYY-MM-DD) or `external_id`. Preview
+the change first, then apply it:
+
+```bash
+docker compose cp regular-roster.csv api:/tmp/regular-roster.csv
+docker compose exec api python -m bsa.scripts.filter_roster /tmp/regular-roster.csv
+docker compose exec api python -m bsa.scripts.filter_roster /tmp/regular-roster.csv --apply
+```
+
+Athletes outside the CSV and their player accounts become inactive, and their
+open sessions are revoked. Historical sessions, metrics, records and vendor
+identity mappings are retained; adding the athlete to a later CSV reactivates
+them.
+
 ### Who may claim an account
 
 Addresses are derived from names, so anyone with a team sheet can guess one.
