@@ -210,6 +210,12 @@ export interface paths {
      * Convert Screenshots
      * @description Read a set of screenshots into a CSV, and optionally import it.
      *
+     *     Give `player_id` to say whose pitches these are. The athlete is resolved
+     *     through the usual authorization check, their TrackMan name identity is
+     *     registered if it was not already, and the CSV is written under their
+     *     canonical name -- so the pitches attach to them on import rather than
+     *     waiting in the mapping queue.
+     *
      *     Screenshots are converted, archived alongside the CSV they produced, and
      *     only then imported -- and **only if every pitch read cleanly.** A single
      *     unreadable value stops the import and comes back named, because a number
@@ -430,6 +436,26 @@ export interface paths {
     };
     /** My Sessions */
     get: operations["my_sessions_api_v1_me_sessions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/videos": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * My Videos
+     * @description The athlete's own footage. Takes no id, so there is none to tamper with.
+     */
+    get: operations["my_videos_api_v1_me_videos_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -695,6 +721,31 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/players/{player_id}/videos": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Player Videos */
+    get: operations["list_player_videos_api_v1_players__player_id__videos_get"];
+    put?: never;
+    /**
+     * Upload Video
+     * @description Attach a clip to an athlete, and optionally to one of their sessions.
+     *
+     *     The session is optional on purpose: a coach usually has the clip before
+     *     they have decided where it belongs, and an untied clip still shows on the
+     *     athlete's page.
+     */
+    post: operations["upload_video_api_v1_players__player_id__videos_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/prs/recent": {
     parameters: {
       query?: never;
@@ -767,6 +818,29 @@ export interface paths {
      */
     post: operations["mark_updated_api_v1_sync_futures__job_id__mark_updated_post"];
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/videos/{video_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete Video
+     * @description Take a clip down here and at the provider.
+     *
+     *     Deleting only the row would leave the file hosted and reachable by anyone
+     *     holding a link, which for footage of a minor is the whole problem.
+     */
+    delete: operations["delete_video_api_v1_videos__video_id__delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -848,6 +922,44 @@ export interface components {
      */
     Aggregation: "MAX" | "MIN" | "AVG" | "COUNT" | "SUM" | "RATE";
     /**
+     * AthleteVideoOut
+     * @description A clip of an athlete.
+     *
+     *     `playback_url` is produced per request rather than stored: an authenticated
+     *     Cloudinary asset is deliberately unreachable without a fresh signature, and
+     *     a URL saved in a row would outlive whatever permission produced it.
+     */
+    AthleteVideoOut: {
+      /** Byte Size */
+      byte_size: number | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Duration Seconds */
+      duration_seconds: number | null;
+      /** External Event Id */
+      external_event_id: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Note */
+      note: string | null;
+      /** Playback Url */
+      playback_url: string;
+      /** Provider */
+      provider: string;
+      /** Session Id */
+      session_id: string | null;
+      /** Thumbnail Url */
+      thumbnail_url: string | null;
+      /** Title */
+      title: string;
+    };
+    /**
      * BattedBallOut
      * @description One measured batted ball. Every field here was measured, not derived.
      */
@@ -885,7 +997,12 @@ export interface components {
        * @default
        */
       opponent_name: string;
-      /** Player Name */
+      /** Player Id */
+      player_id?: string | null;
+      /**
+       * Player Name
+       * @default
+       */
       player_name: string;
       /**
        * Session Date
@@ -902,6 +1019,26 @@ export interface components {
     Body_upload_trackman_csv_api_v1_imports_trackman_csv_post: {
       /** File */
       file: string;
+    };
+    /** Body_upload_video_api_v1_players__player_id__videos_post */
+    Body_upload_video_api_v1_players__player_id__videos_post: {
+      /**
+       * File
+       * @description A video of the athlete
+       */
+      file: string;
+      /**
+       * Note
+       * @default
+       */
+      note: string;
+      /** Session Id */
+      session_id?: string | null;
+      /**
+       * Title
+       * @default
+       */
+      title: string;
     };
     /**
      * ConversionProblemOut
@@ -1611,6 +1748,8 @@ export interface components {
       id: string;
       /** Note */
       note: string | null;
+      /** Thumbnail Url */
+      thumbnail_url?: string | null;
       /** Title */
       title: string;
       /** Url */
@@ -2377,6 +2516,26 @@ export interface operations {
       };
     };
   };
+  my_videos_api_v1_me_videos_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AthleteVideoOut"][];
+        };
+      };
+    };
+  };
   list_metrics_api_v1_metrics_get: {
     parameters: {
       query?: {
@@ -2833,6 +2992,72 @@ export interface operations {
       };
     };
   };
+  list_player_videos_api_v1_players__player_id__videos_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        player_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AthleteVideoOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  upload_video_api_v1_players__player_id__videos_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        player_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": components["schemas"]["Body_upload_video_api_v1_players__player_id__videos_post"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AthleteVideoOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   recent_records_api_v1_prs_recent_get: {
     parameters: {
       query?: {
@@ -2947,6 +3172,35 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["SyncJobOut"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_video_api_v1_videos__video_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        video_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

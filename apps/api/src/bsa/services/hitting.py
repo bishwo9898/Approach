@@ -10,12 +10,14 @@ from sqlalchemy.orm import Session
 
 from bsa.core.clock import today_in
 from bsa.core.errors import NotFoundError
-from bsa.db.models import Player, SessionVideo, TrainingSession
+from bsa.db.models import Player, TrainingSession
 from bsa.db.repositories import hitting as hitting_repo
 from bsa.db.repositories import sessions as sessions_repo
 from bsa.domain.analytics import TimeRange, preceding_window, window_for
 from bsa.domain.hitting_report import FacedPitch, HittingReport, build_report
 from bsa.domain.progress import PeriodSummary, summarize_period
+from bsa.integrations.media import MediaStore
+from bsa.services import media
 
 
 @dataclass(slots=True)
@@ -23,7 +25,7 @@ class SessionReport:
     player: Player
     session: TrainingSession
     report: HittingReport
-    videos: list[SessionVideo]
+    videos: list[media.PlayableVideo]
     #: Every pitch the athlete faced, kept so the API can list the individual
     #: batted balls without recomputing them.
     faced: list[FacedPitch]
@@ -39,7 +41,12 @@ class SessionReport:
 
 
 def session_report(
-    db: Session, organization_id: uuid.UUID, player: Player, session_id: uuid.UUID
+    db: Session,
+    organization_id: uuid.UUID,
+    player: Player,
+    session_id: uuid.UUID,
+    *,
+    media_store: MediaStore | None = None,
 ) -> SessionReport:
     """Build one athlete's report for one session.
 
@@ -59,19 +66,33 @@ def session_report(
         player=player,
         session=session,
         report=build_report(pitches),
-        videos=hitting_repo.videos_for(db, player.id, session.id),
+        videos=(
+            media.videos_for_session(
+                db,
+                media_store,
+                organization_id=organization_id,
+                player_id=player.id,
+                session_id=session.id,
+            )
+            if media_store is not None
+            else []
+        ),
         faced=pitches,
     )
 
 
 def latest_session_report(
-    db: Session, organization_id: uuid.UUID, player: Player
+    db: Session,
+    organization_id: uuid.UUID,
+    player: Player,
+    *,
+    media_store: MediaStore | None = None,
 ) -> SessionReport | None:
     """The athlete's most recent batting session, or None if they have none."""
     recent = hitting_repo.sessions_batted_in(db, player.id, limit=1)
     if not recent:
         return None
-    return session_report(db, organization_id, player, recent[0].id)
+    return session_report(db, organization_id, player, recent[0].id, media_store=media_store)
 
 
 def period_summary(

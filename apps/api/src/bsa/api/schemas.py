@@ -242,7 +242,9 @@ class BattedBallOut(ApiModel):
 class SessionVideoOut(ApiModel):
     id: uuid.UUID
     title: str
+    #: Good for right now; see `AthleteVideoOut.playback_url`.
     url: str
+    thumbnail_url: str | None = None
     external_event_id: str | None
     note: str | None
 
@@ -615,3 +617,28 @@ class ScreenshotConversionOut(ApiModel):
     csv_text: str
     #: Set when the CSV was also run through ingestion.
     imported: ImportResultOut | None = None
+
+
+# -- athlete video -----------------------------------------------------------
+
+
+class AthleteVideoOut(ApiModel):
+    """A clip of an athlete.
+
+    `playback_url` is produced per request rather than stored: an authenticated
+    Cloudinary asset is deliberately unreachable without a fresh signature, and
+    a URL saved in a row would outlive whatever permission produced it.
+    """
+
+    id: uuid.UUID
+    title: str
+    playback_url: str
+    thumbnail_url: str | None
+    note: str | None
+    #: Set when the clip was filed under one of the athlete's sessions.
+    session_id: uuid.UUID | None
+    external_event_id: str | None
+    duration_seconds: float | None
+    byte_size: int | None
+    provider: str
+    created_at: datetime

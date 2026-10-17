@@ -8,7 +8,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CsvUpload } from "@/components/csv-upload";
-import { ScreenshotUpload } from "@/components/screenshot-upload";
 import { IdentityResolver } from "@/components/identity-resolver";
 import { ImportTable } from "@/components/import-table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -101,22 +100,6 @@ export default function OperationsPage() {
         </CardHeader>
         <CardContent>
           <CsvUpload />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Icon name="activity" className="size-4 text-accent-foreground" /> Import from
-            screenshots
-          </CardTitle>
-          <CardDescription>
-            Screenshots of TrackMan&apos;s pitch table are read into a CSV, archived
-            alongside it, and imported — but only if every pitch reads cleanly.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScreenshotUpload />
         </CardContent>
       </Card>
 

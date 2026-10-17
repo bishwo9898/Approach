@@ -84,6 +84,18 @@ class Settings(BaseSettings):
     #: the container. There is no automatic fallback between them.
     ocr_engine: str = "vision"
 
+    #: Where athlete video lives. "cloudinary" in a deployment; "local" writes
+    #: to the object store and serves it unauthenticated, which is refused
+    #: outside development.
+    media_provider: str = "local"
+    cloudinary_cloud_name: str | None = None
+    cloudinary_api_key: str | None = None
+    cloudinary_api_secret: str | None = None
+    #: Largest video accepted, in megabytes. A cap exists because an upload
+    #: runs through the API process; raising it means moving to a direct
+    #: browser-to-provider upload rather than just changing this number.
+    max_video_megabytes: int = 200
+
     trackman_provider: str = "csv"
     futures_provider: str = "manual"
 
@@ -114,6 +126,14 @@ class Settings(BaseSettings):
                 "Use 'code' to require the activation code a coach hands out, or "
                 "'open' to accept a matching email alone -- which lets anyone who "
                 "can guess first.last@domain claim that athlete's account."
+            )
+
+        # Footage of minors served from an unauthenticated route is a laptop
+        # convenience, not a deployment option.
+        if deployed and self.media_provider == "local":
+            raise ValueError(
+                f"BSA_MEDIA_PROVIDER=local is refused when BSA_ENV={self.env.value}: "
+                "it serves video without authentication. Use cloudinary."
             )
 
         if self.env is Environment.PRODUCTION:

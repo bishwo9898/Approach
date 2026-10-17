@@ -14,6 +14,7 @@ from bsa.api.deps import (
     CurrentTrackmanProvider,
     DbSession,
     StaffPrincipal,
+    authorize_player,
 )
 from bsa.core.config import Settings, get_settings
 from bsa.core.errors import ConflictError, NotFoundError, ValidationError
@@ -272,14 +273,25 @@ def convert_screenshots(
     settings: Annotated[Settings, Depends(get_settings)],
     provider: CurrentTrackmanProvider,
     files: Annotated[list[UploadFile], File(description="TrackMan pitch-table screenshots")],
-    player_name: Annotated[str, Form()],
     session_date: Annotated[date, Form()],
+    #: The athlete these screenshots are of. Preferred over `player_name`:
+    #: picking an athlete from the roster is an explicit statement of whose
+    #: data this is, so nothing has to be matched by name afterwards and the
+    #: pitches cannot land in the identity queue.
+    player_id: Annotated[uuid.UUID | None, Form()] = None,
+    player_name: Annotated[str, Form()] = "",
     opponent_name: Annotated[str, Form()] = "",
     session_time: Annotated[str, Form()] = "",
     competition: Annotated[str, Form()] = "",
     ingest: Annotated[bool, Form()] = True,
 ) -> schemas.ScreenshotConversionOut:
     """Read a set of screenshots into a CSV, and optionally import it.
+
+    Give `player_id` to say whose pitches these are. The athlete is resolved
+    through the usual authorization check, their TrackMan name identity is
+    registered if it was not already, and the CSV is written under their
+    canonical name -- so the pitches attach to them on import rather than
+    waiting in the mapping queue.
 
     Screenshots are converted, archived alongside the CSV they produced, and
     only then imported -- and **only if every pitch read cleanly.** A single
@@ -296,11 +308,22 @@ def convert_screenshots(
     if not images:
         raise ValidationError("attach at least one screenshot")
 
+    athlete = None
+    if player_id is not None:
+        athlete = authorize_player(db, principal, player_id)
+        # The coach has named the athlete, so register the identity the CSV
+        # will carry. That is the same explicit act the mapping queue performs,
+        # done up front, and it is what stops these pitches being held.
+        screenshots.ensure_name_identity(db, principal.organization_id, athlete)
+        db.commit()
+    elif not player_name.strip():
+        raise ValidationError("choose an athlete, or give a player name")
+
     result = screenshots.convert(
         get_ocr_engine(settings),
         object_store,
         images,
-        player_name=player_name.strip(),
+        player_name=athlete.display_name if athlete else player_name.strip(),
         session_date=session_date,
         opponent_name=opponent_name.strip(),
         session_time=session_time.strip(),

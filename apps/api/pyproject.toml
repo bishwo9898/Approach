@@ -24,6 +24,9 @@ dependencies = [
     # tesseract-ocr binary the container installs.
     "pillow>=11.0",
     "pytesseract>=0.3.13",
+    # Video hosting: transcoding, delivery and signed access for footage of
+    # minors are not things to build.
+    "cloudinary>=1.41",
 ]
 
 [project.optional-dependencies]
@@ -84,7 +87,7 @@ disallow_untyped_decorators = false
 [[tool.mypy.overrides]]
 # Apple's frameworks ship no stubs. The Vision engine is macOS-only and is
 # exercised by hand against real screenshots, not by the type checker.
-module = ["Vision", "Quartz", "pytesseract", "PIL", "PIL.*"]
+module = ["Vision", "Quartz", "pytesseract", "PIL", "PIL.*", "cloudinary", "cloudinary.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

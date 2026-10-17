@@ -119,22 +119,25 @@ export function HittingSessionReport({ report }: { report: HittingReport }) {
             {report.videos.map((video) => (
               <li key={video.id}>
                 <Card>
-                  <CardContent className="p-4">
-                    <a
-                      href={video.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium hover:underline"
-                    >
-                      {video.title}
-                    </a>
+                  <CardContent className="space-y-2 p-3">
+                    {/* Played in place rather than linked out. The URL is minted
+                        per request and can expire, so it is not something to
+                        hand to another tab. */}
+                    <video
+                      src={video.url}
+                      poster={video.thumbnail_url ?? undefined}
+                      controls
+                      preload="metadata"
+                      className="aspect-video w-full rounded-md bg-black"
+                    />
+                    <p className="text-sm font-medium">{video.title}</p>
                     {video.external_event_id ? (
-                      <p className="mt-0.5 text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         Pitch #{video.external_event_id}
                       </p>
                     ) : null}
                     {video.note ? (
-                      <p className="mt-2 text-sm text-muted-foreground">{video.note}</p>
+                      <p className="text-sm text-muted-foreground">{video.note}</p>
                     ) : null}
                   </CardContent>
                 </Card>

@@ -275,11 +275,12 @@ def hitting_report(result: SessionReport) -> schemas.HittingSessionReportOut:
         ],
         videos=[
             schemas.SessionVideoOut(
-                id=v.id,
-                title=v.title,
-                url=v.url,
-                external_event_id=v.external_event_id,
-                note=v.note,
+                id=v.video.id,
+                title=v.video.title,
+                url=v.playback_url,
+                thumbnail_url=v.thumbnail_url,
+                external_event_id=v.video.external_event_id,
+                note=v.video.note,
             )
             for v in result.videos
         ],

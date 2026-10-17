@@ -1,5 +1,7 @@
 """Runtime configuration tests."""
 
+import pytest
+
 from bsa.core.config import Settings
 
 
@@ -69,6 +71,7 @@ def test_production_refuses_development_passcodes() -> None:
                 player_passcode=player,
                 object_store_backend="gcs",
                 gcs_bucket="bucket",
+                media_provider="cloudinary",
             )
 
 
@@ -82,6 +85,24 @@ def test_production_accepts_real_passcodes() -> None:
         player_passcode="a-long-enough-player-passcode",
         object_store_backend="gcs",
         gcs_bucket="bucket",
+        media_provider="cloudinary",
     )
 
     assert settings.auth_provider == "passcode"
+
+
+def test_production_refuses_unauthenticated_media() -> None:
+    """Footage of minors served without authentication is a laptop
+    convenience, not a deployment option."""
+    from bsa.core.config import Settings
+
+    with pytest.raises(ValueError, match="BSA_MEDIA_PROVIDER=local is refused"):
+        Settings(
+            env="production",
+            auth_provider="passcode",
+            coach_passcode="a-long-enough-coach-passcode",
+            player_passcode="a-long-enough-player-passcode",
+            object_store_backend="gcs",
+            gcs_bucket="bucket",
+            media_provider="local",
+        )

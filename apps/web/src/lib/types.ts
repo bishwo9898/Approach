@@ -75,6 +75,9 @@ export type ImportResult = Schemas["ImportResultOut"];
 export type ScreenshotConversion = Schemas["ScreenshotConversionOut"];
 export type ConversionProblem = Schemas["ConversionProblemOut"];
 
+/** A clip of an athlete. */
+export type AthleteVideo = Schemas["AthleteVideoOut"];
+
 // -- hitting session report -------------------------------------------------
 
 export type HittingReport = Schemas["HittingSessionReportOut"];

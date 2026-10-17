@@ -18,12 +18,17 @@ from __future__ import annotations
 
 import csv
 import io
+import uuid
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 from bsa.core.logging import get_logger
+from bsa.db.models import ExternalPlayerIdentity, Player
 from bsa.domain.screenshot_table import (
     Cell,
     MergedTable,
@@ -35,6 +40,7 @@ from bsa.domain.screenshot_table import (
 from bsa.integrations.ocr import OcrEngine
 from bsa.integrations.ocr.base import OcrUnavailableError
 from bsa.integrations.storage import ObjectStore
+from bsa.integrations.trackman.live_atbat import vendor_identity
 
 log = get_logger(__name__)
 
@@ -245,3 +251,44 @@ def convert(
         first_pitch=min(events) if events else None,
         last_pitch=max(events) if events else None,
     )
+
+
+def ensure_name_identity(db: Session, organization_id: uuid.UUID, player: Player) -> bool:
+    """Register the vendor identity a screenshot import will carry.
+
+    Screenshots name the athlete and give no vendor id, so ingestion matches on
+    a normalized name. That mapping has to exist before the import or the
+    pitches are held in the identity queue.
+
+    Creating it here is not a guess: a coach picked this athlete from the
+    roster, which is the same explicit statement the mapping queue asks for,
+    made before the import instead of after it. Returns whether it was new.
+    """
+    external_id = vendor_identity(player.display_name)
+    existing = db.scalars(
+        select(ExternalPlayerIdentity).where(
+            ExternalPlayerIdentity.organization_id == organization_id,
+            ExternalPlayerIdentity.provider == "trackman",
+            ExternalPlayerIdentity.external_id == external_id,
+        )
+    ).first()
+    if existing is not None:
+        return False
+
+    db.add(
+        ExternalPlayerIdentity(
+            organization_id=organization_id,
+            player_id=player.id,
+            provider="trackman",
+            external_id=external_id,
+            external_display_name=player.display_name,
+            player_metadata={"source": "screenshot_upload"},
+        )
+    )
+    db.flush()
+    log.info(
+        "screenshot.identity_registered",
+        player_id=str(player.id),
+        external_id=external_id,
+    )
+    return True

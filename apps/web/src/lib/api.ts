@@ -28,6 +28,7 @@ import type {
   PlayerOverview,
   PlayerSummary,
   ResolveIdentityResult,
+  AthleteVideo,
   ScreenshotConversion,
   SignIn,
   SyncJob,
@@ -284,14 +285,16 @@ export const api = {
    */
   convertScreenshots: (input: {
     files: File[];
-    playerName: string;
+    playerId?: string;
+    playerName?: string;
     sessionDate: string;
     opponentName?: string;
     ingest?: boolean;
   }) => {
     const form = new FormData();
     for (const file of input.files) form.append("files", file);
-    form.append("player_name", input.playerName);
+    if (input.playerId) form.append("player_id", input.playerId);
+    form.append("player_name", input.playerName ?? "");
     form.append("session_date", input.sessionDate);
     form.append("opponent_name", input.opponentName ?? "");
     form.append("ingest", String(input.ingest ?? true));
@@ -301,6 +304,35 @@ export const api = {
       body: form,
     });
   },
+
+  // -- athlete video ------------------------------------------------------
+
+  playerVideos: (playerId: string) =>
+    request<AthleteVideo[]>(`/api/v1/players/${playerId}/videos`),
+
+  myVideos: () => request<AthleteVideo[]>("/api/v1/me/videos"),
+
+  /** Upload a clip. The session is optional — an untied clip still shows. */
+  uploadVideo: (input: {
+    playerId: string;
+    file: File;
+    title?: string;
+    note?: string;
+    sessionId?: string;
+  }) => {
+    const form = new FormData();
+    form.append("file", input.file);
+    form.append("title", input.title ?? "");
+    form.append("note", input.note ?? "");
+    if (input.sessionId) form.append("session_id", input.sessionId);
+    return request<AthleteVideo>(`/api/v1/players/${input.playerId}/videos`, {
+      method: "POST",
+      body: form,
+    });
+  },
+
+  deleteVideo: (videoId: string) =>
+    request<void>(`/api/v1/videos/${videoId}`, { method: "DELETE" }),
 
   pendingFuturesUpdates: () => request<SyncJob[]>("/api/v1/sync/futures/pending"),
 

@@ -19,16 +19,15 @@ import type { ScreenshotConversion } from "@/lib/types";
  * The one requirement the coach has to meet is stated up front rather than
  * discovered on failure: every screenshot must include the header row.
  */
-export function ScreenshotUpload() {
+export function ScreenshotUpload({ playerId }: { playerId: string }) {
   const [files, setFiles] = useState<File[]>([]);
-  const [playerName, setPlayerName] = useState("");
   const [sessionDate, setSessionDate] = useState("");
   const [opponent, setOpponent] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScreenshotConversion | null>(null);
 
-  const ready = files.length > 0 && playerName.trim() && sessionDate;
+  const ready = files.length > 0 && sessionDate;
 
   const convert = async () => {
     setBusy(true);
@@ -38,7 +37,7 @@ export function ScreenshotUpload() {
       setResult(
         await api.convertScreenshots({
           files,
-          playerName: playerName.trim(),
+          playerId,
           sessionDate,
           opponentName: opponent.trim(),
         }),
@@ -71,13 +70,7 @@ export function ScreenshotUpload() {
         </ul>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-3">
-        <Input
-          value={playerName}
-          onChange={(event) => setPlayerName(event.target.value)}
-          placeholder="Athlete name"
-          aria-label="Athlete name"
-        />
+      <div className="grid gap-2 sm:grid-cols-2">
         <Input
           type="date"
           value={sessionDate}

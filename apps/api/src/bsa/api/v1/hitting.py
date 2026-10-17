@@ -9,8 +9,9 @@ else.
 from __future__ import annotations
 
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from bsa.api import mappers, schemas
 from bsa.api.deps import (
@@ -20,13 +21,17 @@ from bsa.api.deps import (
     authorize_player,
     current_player,
 )
+from bsa.core.config import Settings, get_settings
 from bsa.core.errors import NotFoundError
 from bsa.db.models import SessionVideo
 from bsa.db.repositories import hitting as hitting_repo
 from bsa.domain.analytics import TimeRange
+from bsa.integrations.media import get_media_store
 from bsa.services import hitting
 
 router = APIRouter(tags=["hitting"])
+
+CurrentSettings = Annotated[Settings, Depends(get_settings)]
 
 
 def _summaries(
@@ -64,7 +69,7 @@ def my_hitting_sessions(
 
 @router.get("/me/hitting/latest", response_model=schemas.HittingSessionReportOut)
 def my_latest_session(
-    db: DbSession, principal: CurrentPrincipal
+    db: DbSession, principal: CurrentPrincipal, settings: CurrentSettings
 ) -> schemas.HittingSessionReportOut:
     """The athlete's most recent batting session.
 
@@ -72,7 +77,9 @@ def my_latest_session(
     from until they have batted more than once.
     """
     player = current_player(db, principal)
-    result = hitting.latest_session_report(db, principal.organization_id, player)
+    result = hitting.latest_session_report(
+        db, principal.organization_id, player, media_store=get_media_store(settings)
+    )
     if result is None:
         raise NotFoundError("no batting sessions have been imported for you yet")
     return mappers.hitting_report(result)
@@ -80,11 +87,20 @@ def my_latest_session(
 
 @router.get("/me/hitting/sessions/{session_id}", response_model=schemas.HittingSessionReportOut)
 def my_session(
-    session_id: uuid.UUID, db: DbSession, principal: CurrentPrincipal
+    session_id: uuid.UUID,
+    db: DbSession,
+    principal: CurrentPrincipal,
+    settings: CurrentSettings,
 ) -> schemas.HittingSessionReportOut:
     player = current_player(db, principal)
     return mappers.hitting_report(
-        hitting.session_report(db, principal.organization_id, player, session_id)
+        hitting.session_report(
+            db,
+            principal.organization_id,
+            player,
+            session_id,
+            media_store=get_media_store(settings),
+        )
     )
 
 
@@ -133,10 +149,15 @@ def hitting_sessions(
     response_model=schemas.HittingSessionReportOut,
 )
 def latest_hitting_session(
-    player_id: uuid.UUID, db: DbSession, principal: CurrentPrincipal
+    player_id: uuid.UUID,
+    db: DbSession,
+    principal: CurrentPrincipal,
+    settings: CurrentSettings,
 ) -> schemas.HittingSessionReportOut:
     player = authorize_player(db, principal, player_id)
-    result = hitting.latest_session_report(db, principal.organization_id, player)
+    result = hitting.latest_session_report(
+        db, principal.organization_id, player, media_store=get_media_store(settings)
+    )
     if result is None:
         raise NotFoundError("no batting sessions have been imported for this athlete")
     return mappers.hitting_report(result)
@@ -151,10 +172,17 @@ def hitting_session(
     session_id: uuid.UUID,
     db: DbSession,
     principal: CurrentPrincipal,
+    settings: CurrentSettings,
 ) -> schemas.HittingSessionReportOut:
     player = authorize_player(db, principal, player_id)
     return mappers.hitting_report(
-        hitting.session_report(db, principal.organization_id, player, session_id)
+        hitting.session_report(
+            db,
+            principal.organization_id,
+            player,
+            session_id,
+            media_store=get_media_store(settings),
+        )
     )
 
 
@@ -203,7 +231,8 @@ def add_video(
     """
     player = authorize_player(db, principal, player_id)
     # Reuses the report loader purely for its checks: the session exists, is in
-    # this organization, and this athlete actually batted in it.
+    # this organization, and this athlete actually batted in it. No media store
+    # is needed -- the existing videos are not being read here.
     hitting.session_report(db, principal.organization_id, player, session_id)
 
     video = SessionVideo(

@@ -132,7 +132,7 @@ describe("HittingSessionReport", () => {
     expect(screen.getByText("No video yet")).toBeInTheDocument();
   });
 
-  it("lists attached video with the pitch it belongs to", () => {
+  it("plays attached video in place, next to the pitch it belongs to", () => {
     render(
       <HittingSessionReport
         report={{
@@ -140,7 +140,7 @@ describe("HittingSessionReport", () => {
           videos: [
             {
               id: "v1",
-              title: "Hardest ball",
+              title: "Swing on pitch 1",
               url: "https://example.com/clip.mp4",
               external_event_id: "1",
               note: null,
@@ -150,10 +150,14 @@ describe("HittingSessionReport", () => {
       />,
     );
 
-    const link = screen.getByRole("link", { name: "Hardest ball" });
-    expect(link).toHaveAttribute("href", "https://example.com/clip.mp4");
-    // Opened in a new tab, without handing the target window a reference back.
-    expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    // Played in place rather than linked out: the URL is minted per request
+    // and can expire, so it is not something to hand to another tab.
+    expect(screen.getByText("Swing on pitch 1")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Swing on pitch 1" }),
+    ).not.toBeInTheDocument();
+    const player = document.querySelector("video");
+    expect(player).toHaveAttribute("src", "https://example.com/clip.mp4");
     expect(screen.getByText("Pitch #1")).toBeInTheDocument();
   });
 });

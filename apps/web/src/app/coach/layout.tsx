@@ -7,6 +7,8 @@ import { AuthGate } from "@/components/auth-gate";
 // chart with one point are worse than not showing them at all.
 const NAV = [
   { href: "/coach/players", label: "Athletes", icon: "players" as const },
+  { href: "/coach/imports", label: "Imports", icon: "activity" as const },
+  { href: "/coach/media", label: "Media", icon: "sessions" as const },
   { href: "/coach/operations", label: "Data Health", icon: "database" as const },
 ];
 

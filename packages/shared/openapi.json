@@ -159,6 +159,115 @@
         "title": "Aggregation",
         "type": "string"
       },
+      "AthleteVideoOut": {
+        "description": "A clip of an athlete.\n\n`playback_url` is produced per request rather than stored: an authenticated\nCloudinary asset is deliberately unreachable without a fresh signature, and\na URL saved in a row would outlive whatever permission produced it.",
+        "properties": {
+          "byte_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Byte Size"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "external_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Event Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "playback_url": {
+            "title": "Playback Url",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "playback_url",
+          "thumbnail_url",
+          "note",
+          "session_id",
+          "external_event_id",
+          "duration_seconds",
+          "byte_size",
+          "provider",
+          "created_at"
+        ],
+        "title": "AthleteVideoOut",
+        "type": "object"
+      },
       "BattedBallOut": {
         "description": "One measured batted ball. Every field here was measured, not derived.",
         "properties": {
@@ -240,7 +349,20 @@
             "title": "Opponent Name",
             "type": "string"
           },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
           "player_name": {
+            "default": "",
             "title": "Player Name",
             "type": "string"
           },
@@ -257,7 +379,6 @@
         },
         "required": [
           "files",
-          "player_name",
           "session_date"
         ],
         "title": "Body_convert_screenshots_api_v1_imports_trackman_screenshots_post",
@@ -275,6 +396,43 @@
           "file"
         ],
         "title": "Body_upload_trackman_csv_api_v1_imports_trackman_csv_post",
+        "type": "object"
+      },
+      "Body_upload_video_api_v1_players__player_id__videos_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "A video of the athlete",
+            "title": "File",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "title": {
+            "default": "",
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_video_api_v1_players__player_id__videos_post",
         "type": "object"
       },
       "ConversionProblemOut": {
@@ -2349,6 +2507,17 @@
             ],
             "title": "Note"
           },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -3113,7 +3282,7 @@
     },
     "/api/v1/imports/trackman/screenshots": {
       "post": {
-        "description": "Read a set of screenshots into a CSV, and optionally import it.\n\nScreenshots are converted, archived alongside the CSV they produced, and\nonly then imported -- and **only if every pitch read cleanly.** A single\nunreadable value stops the import and comes back named, because a number\nnobody checked is worse than a number nobody has.\n\nPass `ingest=false` to convert and archive without importing, which is how\nto inspect the CSV first.",
+        "description": "Read a set of screenshots into a CSV, and optionally import it.\n\nGive `player_id` to say whose pitches these are. The athlete is resolved\nthrough the usual authorization check, their TrackMan name identity is\nregistered if it was not already, and the CSV is written under their\ncanonical name -- so the pitches attach to them on import rather than\nwaiting in the mapping queue.\n\nScreenshots are converted, archived alongside the CSV they produced, and\nonly then imported -- and **only if every pitch read cleanly.** A single\nunreadable value stops the import and comes back named, because a number\nnobody checked is worse than a number nobody has.\n\nPass `ingest=false` to convert and archive without importing, which is how\nto inspect the CSV first.",
         "operationId": "convert_screenshots_api_v1_imports_trackman_screenshots_post",
         "requestBody": {
           "content": {
@@ -3529,6 +3698,32 @@
         "summary": "My Sessions",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/api/v1/me/videos": {
+      "get": {
+        "description": "The athlete's own footage. Takes no id, so there is none to tamper with.",
+        "operationId": "my_videos_api_v1_me_videos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AthleteVideoOut"
+                  },
+                  "title": "Response My Videos Api V1 Me Videos Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Videos",
+        "tags": [
+          "media"
         ]
       }
     },
@@ -4286,6 +4481,105 @@
         ]
       }
     },
+    "/api/v1/players/{player_id}/videos": {
+      "get": {
+        "operationId": "list_player_videos_api_v1_players__player_id__videos_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AthleteVideoOut"
+                  },
+                  "title": "Response List Player Videos Api V1 Players  Player Id  Videos Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Player Videos",
+        "tags": [
+          "media"
+        ]
+      },
+      "post": {
+        "description": "Attach a clip to an athlete, and optionally to one of their sessions.\n\nThe session is optional on purpose: a coach usually has the clip before\nthey have decided where it belongs, and an untied clip still shows on the\nathlete's page.",
+        "operationId": "upload_video_api_v1_players__player_id__videos_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Player Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_video_api_v1_players__player_id__videos_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteVideoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Video",
+        "tags": [
+          "media"
+        ]
+      }
+    },
     "/api/v1/prs/recent": {
       "get": {
         "description": "Newest records across the organization -- the feed a coach scans first.",
@@ -4500,6 +4794,43 @@
         "summary": "Mark Updated",
         "tags": [
           "sync"
+        ]
+      }
+    },
+    "/api/v1/videos/{video_id}": {
+      "delete": {
+        "description": "Take a clip down here and at the provider.\n\nDeleting only the row would leave the file hosted and reachable by anyone\nholding a link, which for footage of a minor is the whole problem.",
+        "operationId": "delete_video_api_v1_videos__video_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Video",
+        "tags": [
+          "media"
         ]
       }
     },
