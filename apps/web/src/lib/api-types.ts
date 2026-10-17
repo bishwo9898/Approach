@@ -819,7 +819,10 @@ export interface components {
      * @enum {string}
      */
     Aggregation: "MAX" | "MIN" | "AVG" | "COUNT" | "SUM" | "RATE";
-    /** BattedBallOut */
+    /**
+     * BattedBallOut
+     * @description One measured batted ball. Every field here was measured, not derived.
+     */
     BattedBallOut: {
       /** Event Number */
       event_number: number | null;
@@ -829,6 +832,8 @@ export interface components {
       in_sweet_spot: boolean;
       /** Launch Angle Deg */
       launch_angle_deg: number | null;
+      /** Pitch Velocity Mph */
+      pitch_velocity_mph: number | null;
     };
     /** Body_upload_trackman_csv_api_v1_imports_trackman_csv_post */
     Body_upload_trackman_csv_api_v1_imports_trackman_csv_post: {
@@ -910,6 +915,10 @@ export interface components {
       average_exit_velocity_change: components["schemas"]["PeriodComparisonOut"];
       /** Average Exit Velocity Mph */
       average_exit_velocity_mph: number | null;
+      /** Average Launch Angle Deg */
+      average_launch_angle_deg: number | null;
+      /** Average Pitch Velocity Mph */
+      average_pitch_velocity_mph: number | null;
       /** Batted Balls */
       batted_balls: number;
       best_exit_velocity_change: components["schemas"]["PeriodComparisonOut"];
@@ -934,6 +943,8 @@ export interface components {
       has_trend: boolean;
       /** Last Session */
       last_session: string | null;
+      /** Measured Rate */
+      measured_rate: number | null;
       /** Pitches Faced */
       pitches_faced: number;
       player: components["schemas"]["PlayerSummary"];
@@ -949,12 +960,6 @@ export interface components {
       sweet_spot_count: number;
       /** Sweet Spot Rate */
       sweet_spot_rate: number | null;
-      /** Swings */
-      swings: number;
-      /** Whiff Rate */
-      whiff_rate: number | null;
-      /** Whiffs */
-      whiffs: number;
     };
     /** HittingSessionReportOut */
     HittingSessionReportOut: {
@@ -962,16 +967,20 @@ export interface components {
       average_exit_velocity_mph: number | null;
       /** Average Launch Angle Deg */
       average_launch_angle_deg: number | null;
+      /** Average Pitch Velocity Mph */
+      average_pitch_velocity_mph: number | null;
       /** Batted Balls */
       batted_balls: number;
       /** Best Exit Velocity Mph */
       best_exit_velocity_mph: number | null;
       /** Contact */
       contact: components["schemas"]["BattedBallOut"][];
-      /** Groups */
-      groups: components["schemas"]["PitchGroupSplitOut"][];
+      /** Hardest Ball Launch Angle Deg */
+      hardest_ball_launch_angle_deg: number | null;
       /** Insights */
       insights: components["schemas"]["InsightOut"][];
+      /** Measured Rate */
+      measured_rate: number | null;
       /** Opponent Name */
       opponent_name: string | null;
       /** Pitches Faced */
@@ -993,18 +1002,8 @@ export interface components {
       sweet_spot_count: number;
       /** Sweet Spot Rate */
       sweet_spot_rate: number | null;
-      /** Swing Rate */
-      swing_rate: number | null;
-      /** Swings */
-      swings: number;
-      /** Taken */
-      taken: number;
       /** Videos */
       videos: components["schemas"]["SessionVideoOut"][];
-      /** Whiff Rate */
-      whiff_rate: number | null;
-      /** Whiffs */
-      whiffs: number;
     };
     /**
      * HittingSessionSummaryOut
@@ -1381,31 +1380,6 @@ export interface components {
       unit: string;
       /** Value */
       value: number;
-    };
-    /** PitchGroupSplitOut */
-    PitchGroupSplitOut: {
-      /** Average Exit Velocity Mph */
-      average_exit_velocity_mph: number | null;
-      /** Average Pitch Velocity Mph */
-      average_pitch_velocity_mph: number | null;
-      /** Batted Balls */
-      batted_balls: number;
-      /** Best Exit Velocity Mph */
-      best_exit_velocity_mph: number | null;
-      /** Enough To Judge */
-      enough_to_judge: boolean;
-      /** Group */
-      group: string;
-      /** Label */
-      label: string;
-      /** Seen */
-      seen: number;
-      /** Swings */
-      swings: number;
-      /** Whiff Rate */
-      whiff_rate: number | null;
-      /** Whiffs */
-      whiffs: number;
     };
     /** PlayerOverviewOut */
     PlayerOverviewOut: {

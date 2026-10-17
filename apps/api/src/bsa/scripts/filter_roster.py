@@ -104,9 +104,7 @@ def _name_key(first_name: str, last_name: str) -> str:
 def resolve_entries(
     db: Session, organization: Organization, entries: list[RosterEntry]
 ) -> frozenset[uuid.UUID]:
-    players = list(
-        db.scalars(select(Player).where(Player.organization_id == organization.id))
-    )
+    players = list(db.scalars(select(Player).where(Player.organization_id == organization.id)))
     identities = list(
         db.scalars(
             select(ExternalPlayerIdentity).where(
@@ -158,9 +156,7 @@ def resolve_entries(
 def build_plan(
     db: Session, organization: Organization, selected_ids: frozenset[uuid.UUID]
 ) -> FilterPlan:
-    players = list(
-        db.scalars(select(Player).where(Player.organization_id == organization.id))
-    )
+    players = list(db.scalars(select(Player).where(Player.organization_id == organization.id)))
     player_users = list(
         db.scalars(
             select(User).where(
@@ -261,9 +257,7 @@ def main() -> int:
                 select(Organization).where(Organization.slug == args.organization)
             ).first()
             if organization is None:
-                raise RosterResolutionError(
-                    f"organization {args.organization!r} does not exist"
-                )
+                raise RosterResolutionError(f"organization {args.organization!r} does not exist")
             selected_ids = resolve_entries(db, organization, entries)
             plan = build_plan(db, organization, selected_ids)
             if args.apply:

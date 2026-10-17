@@ -75,7 +75,6 @@ export type ImportResult = Schemas["ImportResultOut"];
 
 export type HittingReport = Schemas["HittingSessionReportOut"];
 export type HittingSessionSummary = Schemas["HittingSessionSummaryOut"];
-export type PitchGroupSplit = Schemas["PitchGroupSplitOut"];
 export type BattedBall = Schemas["BattedBallOut"];
 export type Insight = Schemas["InsightOut"];
 export type SessionVideo = Schemas["SessionVideoOut"];

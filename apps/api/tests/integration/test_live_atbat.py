@@ -27,7 +27,7 @@ from bsa.db.models import (
     TrainingSession,
 )
 from bsa.db.session import get_db
-from bsa.domain.enums import ImportStatus, Role, SwingResult
+from bsa.domain.enums import ImportStatus, Role
 from bsa.integrations.trackman.csv_provider import TrackmanCsvProvider
 from bsa.integrations.trackman.live_atbat import vendor_identity
 from bsa.integrations.trackman.schema import SourcePayload
@@ -203,10 +203,14 @@ def test_once_mapped_every_pitch_faced_is_attributed(
     assert {p.player_id for p in pitches} == {None}
     assert count(db, IdentityResolutionItem) == 0
 
-    results = {p.external_event_id: p.swing_result for p in pitches}
-    assert results["1"] is SwingResult.IN_PLAY
-    assert results["3"] is SwingResult.SWING_MISS
-    assert results["4"] is SwingResult.TAKEN
+    # No swing result is asserted for any pitch: this export does not report
+    # one. The marker shape is kept verbatim as raw context instead, so the
+    # source row is still recoverable without anything being derived from it.
+    assert {p.swing_result for p in pitches} == {None}
+    markers = {p.external_event_id: p.training_context.get("marker_shape") for p in pitches}
+    assert markers["1"] == "square"
+    assert markers["3"] == "crossed_circle"
+    assert markers["4"] == "circle"
 
 
 def test_the_session_records_the_opponent_and_the_inferred_year(
@@ -304,12 +308,13 @@ def test_the_report_counts_what_actually_happened(client, db: Session, batted) -
     ).json()
 
     assert body["pitches_faced"] == 8
-    assert body["taken"] == 3
-    assert body["swings"] == 5
-    assert body["whiffs"] == 2
     assert body["batted_balls"] == 3
     assert body["best_exit_velocity_mph"] == 92.0
     assert body["opponent_name"] == PITCHER
+
+    # Nothing about swings, takes or misses: the export does not report them.
+    for absent in ("taken", "swings", "whiffs", "whiff_rate", "swing_rate", "groups"):
+        assert absent not in body, f"{absent} is back in the report payload"
 
 
 def test_batted_balls_are_listed_hardest_first(client, db: Session, batted) -> None:
@@ -322,14 +327,16 @@ def test_batted_balls_are_listed_hardest_first(client, db: Session, batted) -> N
     assert body["contact"][0]["in_sweet_spot"] is True
 
 
-def test_thin_pitch_groups_are_marked_not_judgeable(client, db: Session, batted) -> None:
-    """Three swings against breaking balls must not read as a weakness."""
+def test_a_thin_sample_is_flagged_rather_than_characterized(client, db: Session, batted) -> None:
+    """Three measured balls describe those balls, not a tendency."""
     body = client.get(
         "/api/v1/me/hitting/latest", headers={"Authorization": "Bearer dev|hitter"}
     ).json()
 
-    offspeed = next(g for g in body["groups"] if g["group"] == "OFFSPEED")
-    assert offspeed["enough_to_judge"] is False
+    assert body["batted_balls"] == 3
+    kinds = {i["kind"] for i in body["insights"]}
+    assert "NOTE" in kinds
+    assert not any("line-drive window" in i["headline"] for i in body["insights"])
 
 
 def test_a_player_cannot_read_another_athletes_report(client, db: Session, batted) -> None:

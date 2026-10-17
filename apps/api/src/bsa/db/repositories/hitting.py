@@ -55,7 +55,6 @@ def faced_pitches(db: Session, player_id: uuid.UUID, session_id: uuid.UUID) -> l
         out.append(
             FacedPitch(
                 event_number=pitch.pitch_number,
-                swing_result=pitch.swing_result,
                 pitch_velocity_mph=pitch.velocity_mph,
                 induced_vertical_break_in=pitch.vertical_break_in,
                 exit_velocity_mph=hit.exit_velocity_mph if hit else None,
@@ -124,7 +123,6 @@ def sessions_with_pitches(
         by_session[pitch.session_id].append(
             FacedPitch(
                 event_number=pitch.pitch_number,
-                swing_result=pitch.swing_result,
                 pitch_velocity_mph=pitch.velocity_mph,
                 induced_vertical_break_in=pitch.vertical_break_in,
                 exit_velocity_mph=hit.exit_velocity_mph if hit else None,

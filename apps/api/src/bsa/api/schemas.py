@@ -228,26 +228,14 @@ class InsightOut(ApiModel):
     detail: str
 
 
-class PitchGroupSplitOut(ApiModel):
-    group: str
-    label: str
-    seen: int
-    swings: int
-    whiffs: int
-    whiff_rate: float | None
-    batted_balls: int
-    average_pitch_velocity_mph: float | None
-    average_exit_velocity_mph: float | None
-    best_exit_velocity_mph: float | None
-    #: False when the split is shown for completeness but must not be read as
-    #: a strength or a weakness.
-    enough_to_judge: bool
-
-
 class BattedBallOut(ApiModel):
+    """One measured batted ball. Every field here was measured, not derived."""
+
     event_number: int | None
     exit_velocity_mph: float
     launch_angle_deg: float | None
+    pitch_velocity_mph: float | None
+    #: Whether the measured launch angle falls in the 8-32 degree band.
     in_sweet_spot: bool
 
 
@@ -287,25 +275,29 @@ class HittingSessionReportOut(ApiModel):
     session_type: str | None
     opponent_name: str | None
 
+    #: Pitches TrackMan recorded for this hitter. NOT a count of swings: this
+    #: export does not report swings, and a pitch with no measured batted ball
+    #: may have been taken, fouled, missed, or simply not read by the radar.
     pitches_faced: int
-    taken: int
-    swings: int
-    whiffs: int
-    whiff_rate: float | None
-    swing_rate: float | None
-
+    #: Pitches that produced a measured batted ball.
     batted_balls: int
+    #: Share of recorded pitches with a measurement. Data coverage, not a
+    #: contact rate -- see `pitches_faced`.
+    measured_rate: float | None
+
     best_exit_velocity_mph: float | None
     average_exit_velocity_mph: float | None
     average_launch_angle_deg: float | None
+    hardest_ball_launch_angle_deg: float | None
     sweet_spot_count: int
+    #: Denominated in measured batted balls, never in pitches.
     sweet_spot_rate: float | None
+    average_pitch_velocity_mph: float | None
 
-    # Required rather than defaulted: a report always carries all four lists,
+    # Required rather than defaulted: a report always carries all three lists,
     # empty when there is nothing in them. Defaulting them would make each one
     # optional in the OpenAPI document, and every consumer would have to guard
     # against an absence that never happens.
-    groups: list[PitchGroupSplitOut]
     contact: list[BattedBallOut]
     insights: list[InsightOut]
     videos: list[SessionVideoOut]
@@ -574,14 +566,14 @@ class HittingPeriodSummaryOut(ApiModel):
     has_trend: bool
 
     pitches_faced: int
-    swings: int
-    whiffs: int
-    whiff_rate: float | None
     batted_balls: int
+    measured_rate: float | None
     best_exit_velocity_mph: float | None
     average_exit_velocity_mph: float | None
+    average_launch_angle_deg: float | None
     sweet_spot_count: int
     sweet_spot_rate: float | None
+    average_pitch_velocity_mph: float | None
 
     best_exit_velocity_change: PeriodComparisonOut
     average_exit_velocity_change: PeriodComparisonOut

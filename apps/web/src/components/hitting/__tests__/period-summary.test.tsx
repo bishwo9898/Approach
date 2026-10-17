@@ -130,9 +130,8 @@ describe("a period with a trend", () => {
 
   it("attaches the sample size to every headline", () => {
     render(<HittingPeriodView summary={summary()} />);
-    expect(screen.getByText(/across 12 batted balls/)).toBeInTheDocument();
+    expect(screen.getAllByText(/across 12 batted balls/).length).toBeGreaterThan(0);
     expect(screen.getByText(/7 of 12 balls/)).toBeInTheDocument();
-    expect(screen.getByText(/9 of 30 swings/)).toBeInTheDocument();
   });
 });
 

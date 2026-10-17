@@ -13,7 +13,6 @@ from datetime import date
 import pytest
 
 from bsa.domain.analytics import DateWindow, TimeRange
-from bsa.domain.enums import SwingResult
 from bsa.domain.hitting_report import FacedPitch
 from bsa.domain.progress import (
     MIN_BUCKETS_FOR_A_TREND,
@@ -29,14 +28,15 @@ from bsa.domain.progress import (
 def batted(exit_velocity: float, launch_angle: float = 18.0) -> FacedPitch:
     return FacedPitch(
         event_number=1,
-        swing_result=SwingResult.IN_PLAY,
+        pitch_velocity_mph=75.0,
         exit_velocity_mph=exit_velocity,
         launch_angle_deg=launch_angle,
     )
 
 
-def whiff() -> FacedPitch:
-    return FacedPitch(event_number=1, swing_result=SwingResult.SWING_MISS)
+def unmeasured() -> FacedPitch:
+    """A recorded pitch with no batted-ball reading."""
+    return FacedPitch(event_number=1, pitch_velocity_mph=75.0)
 
 
 def session(day: date, *pitches: FacedPitch) -> SessionPitches:
@@ -141,7 +141,7 @@ class TestTotals:
         """Deliberately the same definition, not a second one that can drift."""
         summary = summarize(
             [
-                session(date(2026, 9, 3), batted(90.0), whiff()),
+                session(date(2026, 9, 3), batted(90.0), unmeasured()),
                 session(date(2026, 9, 17), batted(95.0), batted(80.0)),
             ]
         )

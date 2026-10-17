@@ -103,9 +103,10 @@ export function HittingPeriodView({ summary }: { summary: HittingPeriodSummary }
           sub={`${summary.sweet_spot_count} of ${summary.batted_balls} balls, 8°–32°`}
         />
         <Tile
-          label="Swings missed"
-          figure={percent(summary.whiff_rate)}
-          sub={`${summary.whiffs} of ${summary.swings} swings`}
+          label="Average launch angle"
+          figure={value(summary.average_launch_angle_deg, 0)}
+          unit="°"
+          sub={`across ${summary.batted_balls} batted balls`}
         />
       </div>
 

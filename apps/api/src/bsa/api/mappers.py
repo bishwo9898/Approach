@@ -241,7 +241,8 @@ def hitting_report(result: SessionReport) -> schemas.HittingSessionReportOut:
             event_number=p.event_number,
             exit_velocity_mph=p.exit_velocity_mph,
             launch_angle_deg=p.launch_angle_deg,
-            in_sweet_spot=p.in_sweet_spot,
+            pitch_velocity_mph=p.pitch_velocity_mph,
+            in_sweet_spot=p.in_line_drive_window,
         )
         for p in sorted(
             result.contact_pitches,
@@ -258,33 +259,15 @@ def hitting_report(result: SessionReport) -> schemas.HittingSessionReportOut:
         session_type=result.session.session_type,
         opponent_name=result.opponent_name,
         pitches_faced=report.pitches_faced,
-        taken=report.taken,
-        swings=report.swings,
-        whiffs=report.whiffs,
-        whiff_rate=report.whiff_rate,
-        swing_rate=report.swing_rate,
         batted_balls=report.batted_balls,
+        measured_rate=report.measured_rate,
         best_exit_velocity_mph=report.best_exit_velocity_mph,
         average_exit_velocity_mph=report.average_exit_velocity_mph,
         average_launch_angle_deg=report.average_launch_angle_deg,
+        hardest_ball_launch_angle_deg=report.hardest_ball_launch_angle_deg,
         sweet_spot_count=report.sweet_spot_count,
         sweet_spot_rate=report.sweet_spot_rate,
-        groups=[
-            schemas.PitchGroupSplitOut(
-                group=g.group.value,
-                label=g.group.label,
-                seen=g.seen,
-                swings=g.swings,
-                whiffs=g.whiffs,
-                whiff_rate=g.whiff_rate,
-                batted_balls=g.batted_balls,
-                average_pitch_velocity_mph=g.average_pitch_velocity_mph,
-                average_exit_velocity_mph=g.average_exit_velocity_mph,
-                best_exit_velocity_mph=g.best_exit_velocity_mph,
-                enough_to_judge=g.has_enough_swings_to_judge,
-            )
-            for g in report.groups
-        ],
+        average_pitch_velocity_mph=report.average_pitch_velocity_mph,
         contact=contact,
         insights=[
             schemas.InsightOut(kind=i.kind.value, headline=i.headline, detail=i.detail)
@@ -354,14 +337,14 @@ def hitting_period(player: Player, summary: PeriodSummary) -> schemas.HittingPer
         has_data=summary.has_data,
         has_trend=summary.has_trend,
         pitches_faced=totals.pitches_faced,
-        swings=totals.swings,
-        whiffs=totals.whiffs,
-        whiff_rate=totals.whiff_rate,
         batted_balls=totals.batted_balls,
+        measured_rate=totals.measured_rate,
         best_exit_velocity_mph=totals.best_exit_velocity_mph,
         average_exit_velocity_mph=totals.average_exit_velocity_mph,
+        average_launch_angle_deg=totals.average_launch_angle_deg,
         sweet_spot_count=totals.sweet_spot_count,
         sweet_spot_rate=totals.sweet_spot_rate,
+        average_pitch_velocity_mph=totals.average_pitch_velocity_mph,
         best_exit_velocity_change=_period_comparison(summary.comparison("best_exit_velocity_mph")),
         average_exit_velocity_change=_period_comparison(
             summary.comparison("average_exit_velocity_mph")

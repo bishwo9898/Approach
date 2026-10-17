@@ -9,60 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate } from "@/lib/format";
-import type { HittingReport, PitchGroupSplit } from "@/lib/types";
+import type { HittingReport } from "@/lib/types";
 
-/**
- * One pitch type, as a card rather than a table row.
- *
- * Three rows across seven columns is a lot of grid for very little data, and it
- * collapses badly on a phone. The same numbers read faster grouped.
- */
-function PitchGroupCard({ group }: { group: PitchGroupSplit }) {
-  const stats: Array<[string, string]> = [
-    ["Swings", String(group.swings)],
-    ["Missed", `${group.whiffs} (${percent(group.whiff_rate)})`],
-    ["In play", String(group.batted_balls)],
-    ["Avg exit", `${value(group.average_exit_velocity_mph)} mph`],
-  ];
-
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="text-sm font-semibold">{group.label}</p>
-          <p className="tabular shrink-0 text-xs text-muted-foreground">
-            {group.seen} seen · {value(group.average_pitch_velocity_mph)} mph
-          </p>
-        </div>
-
-        {!group.enough_to_judge ? (
-          <p className="mt-2 inline-block rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-            too few to judge
-          </p>
-        ) : null}
-
-        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
-          {stats.map(([label, figure]) => (
-            <div key={label}>
-              <dt className="text-[11px] text-muted-foreground">{label}</dt>
-              <dd className="tabular mt-0.5 text-sm font-medium">{figure}</dd>
-            </div>
-          ))}
-        </dl>
-      </CardContent>
-    </Card>
-  );
-}
-
+/** The list opens showing the hardest few, with the rest behind a toggle. */
 const VISIBLE_BALLS = 5;
 
-/**
- * One hitting session, as the athlete and their coach both see it.
- *
- * Everything here comes from four measurements the export actually carries --
- * the pitch, whether they swung, whether they hit it, and how hard and at what
- * angle. Nothing is padded out with numbers that would only look like analysis.
- */
 export function HittingSessionReport({ report }: { report: HittingReport }) {
   const [showAllBalls, setShowAllBalls] = useState(false);
   const balls = showAllBalls ? report.contact : report.contact.slice(0, VISIBLE_BALLS);
@@ -78,8 +29,8 @@ export function HittingSessionReport({ report }: { report: HittingReport }) {
           {formatDate(report.session_date)}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {report.pitches_faced} pitches · {report.swings} swings · {report.batted_balls}{" "}
-          balls measured
+          {report.pitches_faced} pitches recorded · {report.batted_balls} with a measured
+          batted ball
         </p>
       </header>
 
@@ -102,9 +53,10 @@ export function HittingSessionReport({ report }: { report: HittingReport }) {
           sub={`${report.sweet_spot_count} of ${report.batted_balls} balls, 8°–32°`}
         />
         <Tile
-          label="Swings missed"
-          figure={percent(report.whiff_rate)}
-          sub={`${report.whiffs} of ${report.swings} swings`}
+          label="Average launch angle"
+          figure={value(report.average_launch_angle_deg, 0)}
+          unit="°"
+          sub={`across ${report.batted_balls} batted balls`}
         />
       </div>
 
@@ -155,17 +107,6 @@ export function HittingSessionReport({ report }: { report: HittingReport }) {
           </Card>
         </Section>
       ) : null}
-
-      <Section
-        title="How you handled each pitch"
-        hint="Grouped by measured movement — this export does not label pitch types."
-      >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {report.groups.map((group) => (
-            <PitchGroupCard key={group.group} group={group} />
-          ))}
-        </div>
-      </Section>
 
       <Section title="Video">
         {report.videos.length === 0 ? (

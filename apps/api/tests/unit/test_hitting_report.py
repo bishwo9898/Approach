@@ -1,181 +1,184 @@
-"""The hitting session report.
+"""The session report.
 
-The report is shown to a teenager who will act on it, so the tests here are
-mostly about what it must refuse to claim.
+The governing rule, and the reason this module was rewritten: **nothing here
+may count something TrackMan did not measure.** The export reports a pitch and
+its movement, and, when the radar read a batted ball, an exit speed and a
+launch angle. It does not report swings, takes or misses, so neither does this.
 """
 
 from __future__ import annotations
 
-from bsa.domain.enums import SwingResult
+import pytest
+
 from bsa.domain.hitting_report import (
+    LINE_DRIVE_MAX_DEG,
+    LINE_DRIVE_MIN_DEG,
+    MIN_BATTED_BALLS_FOR_A_CLAIM,
     FacedPitch,
     InsightKind,
-    PitchGroup,
     build_report,
 )
 
 
-def faced(
-    *,
-    swing: SwingResult | None = SwingResult.TAKEN,
-    ivb: float | None = 15.0,
-    ev: float | None = None,
-    la: float | None = None,
-    velo: float | None = 78.0,
-) -> FacedPitch:
+def batted(exit_velocity: float, launch_angle: float, pitch: float = 75.0) -> FacedPitch:
     return FacedPitch(
         event_number=1,
-        swing_result=swing,
-        pitch_velocity_mph=velo,
-        induced_vertical_break_in=ivb,
-        exit_velocity_mph=ev,
-        launch_angle_deg=la,
+        pitch_velocity_mph=pitch,
+        exit_velocity_mph=exit_velocity,
+        launch_angle_deg=launch_angle,
     )
 
 
-def headlines(report) -> str:  # type: ignore[no-untyped-def]
-    return " | ".join(i.headline for i in report.insights)
+def unmeasured(pitch: float = 75.0) -> FacedPitch:
+    """A recorded pitch with no batted-ball reading.
 
-
-def test_counts_takes_swings_whiffs_and_contact() -> None:
-    report = build_report(
-        [
-            faced(swing=SwingResult.TAKEN),
-            faced(swing=SwingResult.TAKEN),
-            faced(swing=SwingResult.SWING_MISS),
-            faced(swing=SwingResult.IN_PLAY, ev=90.0, la=15.0),
-        ]
-    )
-
-    assert report.pitches_faced == 4
-    assert report.taken == 2
-    assert report.swings == 2
-    assert report.whiffs == 1
-    assert report.batted_balls == 1
-    assert report.whiff_rate == 50.0
-
-
-def test_a_ball_in_play_without_a_measurement_is_not_a_batted_ball() -> None:
-    """Exit velocity is what makes contact measurable. No reading, no claim."""
-    report = build_report([faced(swing=SwingResult.IN_PLAY, ev=None)])
-
-    assert report.swings == 1
-    assert report.batted_balls == 0
-    assert report.best_exit_velocity_mph is None
-    assert report.sweet_spot_rate is None
-
-
-def test_rates_are_none_rather_than_zero_when_there_is_nothing_to_divide() -> None:
-    """A 0% whiff rate off no swings would read as perfect contact."""
-    report = build_report([faced(swing=SwingResult.TAKEN)])
-
-    assert report.whiff_rate is None
-    assert report.sweet_spot_rate is None
-    assert report.best_exit_velocity_mph is None
-
-
-def test_sweet_spot_window_is_inclusive_at_both_ends() -> None:
-    report = build_report(
-        [
-            faced(swing=SwingResult.IN_PLAY, ev=80.0, la=8.0),
-            faced(swing=SwingResult.IN_PLAY, ev=80.0, la=32.0),
-            faced(swing=SwingResult.IN_PLAY, ev=80.0, la=7.9),
-            faced(swing=SwingResult.IN_PLAY, ev=80.0, la=32.1),
-        ]
-    )
-
-    assert report.sweet_spot_count == 2
-    assert report.sweet_spot_rate == 50.0
-
-
-def test_pitches_are_grouped_by_measured_movement() -> None:
-    """The export does not label pitch types, so movement is all we have."""
-    report = build_report(
-        [
-            faced(ivb=15.0),
-            faced(ivb=8.0),
-            faced(ivb=-5.0),
-            faced(ivb=None),
-        ]
-    )
-
-    by_group = {g.group: g for g in report.groups}
-    assert by_group[PitchGroup.FASTBALL].seen == 2
-    assert by_group[PitchGroup.OFFSPEED].seen == 1
-    assert by_group[PitchGroup.UNCLASSIFIED].seen == 1
-
-
-def test_a_pitch_group_is_not_characterized_on_too_few_swings() -> None:
-    """The guard that matters most.
-
-    Four swings against breaking balls is not evidence of a weakness against
-    breaking balls, however tempting the percentage looks.
+    Taken, fouled, missed, or simply not picked up by the radar -- the export
+    does not say which, and nothing in the report may assume.
     """
-    pitches = [faced(swing=SwingResult.IN_PLAY, ivb=15.0, ev=85.0, la=12.0) for _ in range(20)]
-    pitches += [faced(swing=SwingResult.SWING_MISS, ivb=-6.0) for _ in range(4)]
-
-    report = build_report(pitches)
-
-    offspeed = next(g for g in report.groups if g.group is PitchGroup.OFFSPEED)
-    assert offspeed.whiff_rate == 100.0
-    assert not offspeed.has_enough_swings_to_judge
-    # Despite a 100% whiff rate, no insight claims a weakness.
-    assert "trouble" not in headlines(report)
+    return FacedPitch(event_number=1, pitch_velocity_mph=pitch)
 
 
-def test_a_pitch_group_is_characterized_once_there_are_enough_swings() -> None:
-    pitches = [faced(swing=SwingResult.IN_PLAY, ivb=15.0, ev=85.0, la=12.0) for _ in range(12)]
-    pitches += [faced(swing=SwingResult.SWING_MISS, ivb=-6.0) for _ in range(10)]
+class TestWhatIsCounted:
+    def test_a_batted_ball_is_one_with_a_measured_exit_speed(self) -> None:
+        report = build_report([batted(90.0, 15.0), unmeasured(), unmeasured()])
+        assert report.batted_balls == 1
+        assert report.pitches_faced == 3
 
-    report = build_report(pitches)
+    def test_pitches_faced_counts_every_recorded_pitch(self) -> None:
+        """Not swings. The hitter faced them; what they did is unknown."""
+        report = build_report([unmeasured() for _ in range(10)])
+        assert report.pitches_faced == 10
+        assert report.batted_balls == 0
 
-    assert "trouble" in headlines(report)
-
-
-def test_thin_contact_samples_are_called_out_explicitly() -> None:
-    pitches = [faced(swing=SwingResult.IN_PLAY, ivb=15.0, ev=85.0, la=12.0) for _ in range(10)]
-    pitches += [faced(swing=SwingResult.IN_PLAY, ivb=-6.0, ev=80.0, la=10.0) for _ in range(2)]
-
-    report = build_report(pitches)
-
-    notes = [i for i in report.insights if i.kind is InsightKind.NOTE]
-    assert any("Only 2 batted balls" in i.headline for i in notes)
-
-
-def test_a_consistency_gap_is_reported_as_consistency_not_power() -> None:
-    pitches = [faced(swing=SwingResult.IN_PLAY, ev=95.0, la=15.0)]
-    pitches += [faced(swing=SwingResult.IN_PLAY, ev=60.0, la=15.0) for _ in range(5)]
-
-    report = build_report(pitches)
-
-    gap = next(i for i in report.insights if "below your best" in i.headline)
-    assert gap.kind is InsightKind.WORK_ON
-    assert "consistency rather than power" in gap.detail
+    def test_an_empty_session_measures_nothing_rather_than_zero(self) -> None:
+        report = build_report([])
+        assert report.batted_balls == 0
+        assert report.best_exit_velocity_mph is None
+        assert report.average_exit_velocity_mph is None
+        assert report.sweet_spot_rate is None
+        assert report.measured_rate is None
 
 
-def test_every_report_says_it_is_only_one_session() -> None:
-    """A single day must never read as a trend."""
-    report = build_report([faced(swing=SwingResult.IN_PLAY, ev=90.0, la=15.0)])
+class TestNoSwingArithmetic:
+    """The regression this rewrite exists to prevent.
 
-    assert any(i.headline == "This is one session" for i in report.insights)
+    A coach was shown "13 of your 34 swings missed". TrackMan does not track
+    that; it came from reading the export's marker shapes as swing outcomes.
+    """
+
+    @pytest.mark.parametrize(
+        "attribute", ["swings", "whiffs", "whiff_rate", "taken", "swing_rate", "groups"]
+    )
+    def test_the_report_exposes_no_swing_derived_quantity(self, attribute: str) -> None:
+        report = build_report([batted(90.0, 15.0), unmeasured()])
+        assert not hasattr(report, attribute), (
+            f"{attribute} is back; the export does not support it"
+        )
+
+    def test_a_faced_pitch_carries_no_swing_result(self) -> None:
+        assert not hasattr(FacedPitch(event_number=1), "swing_result")
+        assert not hasattr(FacedPitch(event_number=1), "swung")
+
+    def test_no_insight_mentions_a_swing_being_missed(self) -> None:
+        report = build_report([batted(90.0, 15.0)] + [unmeasured() for _ in range(30)])
+        wording = " ".join(i.headline + " " + i.detail for i in report.insights).lower()
+        for banned in ("missed", "whiff", "swings missed", "took"):
+            assert banned not in wording, f"insight claims {banned!r} from unmeasured data"
 
 
-def test_the_report_makes_no_medical_or_injury_claim() -> None:
-    pitches = [faced(swing=SwingResult.SWING_MISS) for _ in range(30)]
-    pitches += [faced(swing=SwingResult.IN_PLAY, ev=45.0, la=-20.0) for _ in range(6)]
-
-    report = build_report(pitches)
-
-    text = " ".join(f"{i.headline} {i.detail}" for i in report.insights).lower()
-    for word in ("injur", "risk", "fatigue", "health", "medical"):
-        assert word not in text, word
+class TestMeasuredRate:
+    def test_it_is_coverage_not_a_contact_rate(self) -> None:
+        """16 of 66 pitches produced a measurement. Why the other 50 did not is
+        unknown, so this is reported as coverage and nothing else."""
+        report = build_report([batted(90.0, 15.0)] * 16 + [unmeasured()] * 50)
+        assert report.measured_rate == pytest.approx(24.2, abs=0.1)
 
 
-def test_an_empty_session_produces_no_false_claims() -> None:
-    report = build_report([])
+class TestExitVelocity:
+    def test_best_and_typical_come_from_measured_balls_only(self) -> None:
+        report = build_report([batted(90.0, 15.0), batted(80.0, 15.0), unmeasured()])
+        assert report.best_exit_velocity_mph == 90.0
+        assert report.average_exit_velocity_mph == 85.0
 
-    assert report.pitches_faced == 0
-    assert report.groups == []
-    assert report.best_exit_velocity_mph is None
-    # Only the honesty note survives.
-    assert all(i.kind is InsightKind.NOTE for i in report.insights)
+    def test_the_hardest_ball_carries_its_launch_angle(self) -> None:
+        report = build_report([batted(80.0, 5.0), batted(95.0, 22.0)])
+        assert report.best_exit_velocity_mph == 95.0
+        assert report.hardest_ball_launch_angle_deg == 22.0
+
+
+class TestLineDriveWindow:
+    @pytest.mark.parametrize(
+        ("angle", "inside"),
+        [(-5.0, False), (7.9, False), (8.0, True), (20.0, True), (32.0, True), (32.1, False)],
+    )
+    def test_the_band_is_inclusive_at_both_ends(self, angle: float, inside: bool) -> None:
+        assert (
+            FacedPitch(
+                event_number=1, exit_velocity_mph=90.0, launch_angle_deg=angle
+            ).in_line_drive_window
+            is inside
+        )
+
+    def test_the_rate_is_denominated_in_measured_balls(self) -> None:
+        """Never in pitches: we do not know how many of the rest were swung at."""
+        report = build_report(
+            [batted(90.0, 15.0), batted(90.0, 40.0), *[unmeasured() for _ in range(20)]]
+        )
+        assert report.sweet_spot_count == 1
+        assert report.sweet_spot_rate == 50.0
+
+    def test_a_ball_with_no_launch_angle_is_not_counted_as_inside(self) -> None:
+        report = build_report([FacedPitch(event_number=1, exit_velocity_mph=90.0)])
+        assert report.batted_balls == 1
+        assert report.sweet_spot_count == 0
+
+
+class TestPitchContext:
+    def test_average_pitch_speed_uses_every_recorded_pitch(self) -> None:
+        """Measured on every row, including ones with no batted ball."""
+        report = build_report([batted(90.0, 15.0, pitch=80.0), unmeasured(pitch=70.0)])
+        assert report.average_pitch_velocity_mph == 75.0
+
+    def test_a_pitch_with_no_speed_is_skipped_rather_than_zeroed(self) -> None:
+        report = build_report([FacedPitch(event_number=1), batted(90.0, 15.0, pitch=80.0)])
+        assert report.average_pitch_velocity_mph == 80.0
+
+
+class TestInsights:
+    def test_the_hardest_ball_is_always_reported(self) -> None:
+        report = build_report([batted(93.4, 20.0)])
+        headline = report.insights[0].headline
+        assert "93.4 mph" in headline
+        assert report.insights[0].kind is InsightKind.STRENGTH
+
+    def test_the_hardest_ball_insight_places_its_launch_angle(self) -> None:
+        report = build_report([batted(93.4, 20.0)])
+        assert "in the line-drive window" in report.insights[0].detail
+
+    def test_a_thin_sample_is_flagged_rather_than_characterized(self) -> None:
+        report = build_report([batted(90.0, 15.0), batted(70.0, 15.0)])
+        kinds = {i.kind for i in report.insights}
+        assert InsightKind.NOTE in kinds
+        assert not any("line-drive window" in i.headline for i in report.insights)
+
+    def test_a_rate_is_only_characterized_once_there_are_enough_balls(self) -> None:
+        enough = [batted(90.0, 15.0) for _ in range(MIN_BATTED_BALLS_FOR_A_CLAIM)]
+        report = build_report(enough)
+        assert any("line-drive window" in i.headline for i in report.insights)
+
+    def test_a_wide_gap_between_best_and_typical_is_called_consistency(self) -> None:
+        report = build_report([batted(100.0, 15.0), *[batted(70.0, 15.0) for _ in range(5)]])
+        details = " ".join(i.detail for i in report.insights)
+        assert "consistency rather than power" in details
+
+    def test_every_insight_names_the_sample_it_rests_on(self) -> None:
+        report = build_report([batted(90.0, 15.0) for _ in range(6)])
+        for insight in report.insights:
+            text = insight.headline + insight.detail
+            assert any(ch.isdigit() for ch in text)
+
+
+def test_the_line_drive_band_is_the_published_one() -> None:
+    """8-32 degrees. A physical property of a batted ball, not a judgement
+    about a level of play -- which is why it is the only benchmark here."""
+    assert (LINE_DRIVE_MIN_DEG, LINE_DRIVE_MAX_DEG) == (8.0, 32.0)

@@ -33,7 +33,7 @@ from typing import Any
 
 from bsa.core.logging import get_logger
 from bsa.core.units import Unit, convert
-from bsa.domain.enums import ImportIssueCode, SourceStatus, SwingResult
+from bsa.domain.enums import ImportIssueCode, SourceStatus
 from bsa.integrations.trackman.schema import (
     ParsedHit,
     ParsedPitch,
@@ -64,11 +64,16 @@ REQUIRED = frozenset(
 #: `circle` never carried a batted ball (0/32), `crossed_circle` almost never
 #: (1/13, a measured foul), and `square` usually did (15/21). The shapes encode
 #: the batter's response, which is the single most useful thing in the file.
-SWING_RESULTS: dict[str, SwingResult] = {
-    "square": SwingResult.IN_PLAY,
-    "crossed_circle": SwingResult.SWING_MISS,
-    "circle": SwingResult.TAKEN,
-}
+#: Marker shapes the export is known to use. Kept as a *vocabulary check*
+#: only: an unfamiliar shape is worth reporting, but no shape is translated
+#: into a swing, a take or a miss.
+#:
+#: It used to be. A square was read as a ball in play, a crossed circle as a
+#: swing and miss, a circle as a take -- an inference, not something TrackMan
+#: publishes, and one a coach correctly rejected when the report claimed to
+#: count missed swings. The shape is still stored with the raw row, because
+#: raw source data is never discarded, but nothing counts anything from it.
+KNOWN_MARKERS = frozenset({"square", "crossed_circle", "circle"})
 
 _NULLISH = {"", "-", "na", "n/a", "null", "none", "nan"}
 
@@ -230,13 +235,15 @@ def parse(text: str, *, today: date) -> ParseResult:
             sessions[session_uid] = session
 
         marker = (_clean(row.get("marker_shape")) or "").lower()
-        swing = SWING_RESULTS.get(marker)
-        if marker and swing is None:
+        if marker and marker not in KNOWN_MARKERS:
+            # Worth knowing the export grew a shape we have not seen, even
+            # though nothing is derived from it. A new shape may mean the
+            # source layout changed.
             result.issues.append(
                 RowIssue(
                     row_number,
                     ImportIssueCode.INVALID_VALUE,
-                    f"unrecognized marker shape {marker!r}; swing result not recorded",
+                    f"unfamiliar marker shape {marker!r}; stored but not interpreted",
                     field="marker_shape",
                 )
             )
@@ -251,7 +258,10 @@ def parse(text: str, *, today: date) -> ParseResult:
                 external_player_id=None,
                 external_batter_id=vendor_identity(player),
                 external_batter_name=player,
-                swing_result=swing.value if swing else None,
+                # Deliberately unset. This export gives no swing information,
+                # and guessing it from the marker shape is what produced a
+                # report claiming to count missed swings.
+                swing_result=None,
                 pitch_number=int(_number(event) or 0) or None,
                 pitch_type=_clean(row.get("pitch_type")),
                 velocity_mph=convert(velocity, "mph", Unit.MPH) if velocity else None,
@@ -260,7 +270,7 @@ def parse(text: str, *, today: date) -> ParseResult:
                 release_height_ft=_number(row.get("release_height_ft")),
                 vertical_break_in=_number(row.get("induced_vertical_movement_in")),
                 horizontal_break_in=_number(row.get("horizontal_movement_in")),
-                training_context=_training_context(row, opponent),
+                training_context=_training_context(row, opponent, marker=marker),
                 source_row_number=row_number,
             )
         )
@@ -295,8 +305,18 @@ def parse(text: str, *, today: date) -> ParseResult:
     return result
 
 
-def _training_context(row: dict[str, str], opponent: str) -> dict[str, Any]:
+def _training_context(
+    row: dict[str, str], opponent: str, *, marker: str | None = None
+) -> dict[str, Any]:
+    """Raw per-row context, kept verbatim.
+
+    The marker shape lives here rather than in a typed column: it is source
+    data worth keeping, and a JSON field makes it obvious that it is an
+    unreduced observation rather than a fact the domain has agreed to.
+    """
     context: dict[str, Any] = {"opponent": opponent}
+    if marker:
+        context["marker_shape"] = marker
     for source, key in (("competition", "competition"), ("pitch_set", "pitch_set")):
         value = _clean(row.get(source))
         if value:

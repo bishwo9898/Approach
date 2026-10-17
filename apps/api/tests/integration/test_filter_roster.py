@@ -51,9 +51,7 @@ def test_filter_deactivates_non_roster_players_accounts_and_sessions(
     assert session.revoked_at is not None
 
 
-def test_shared_name_requires_a_disambiguator(
-    db: Session, organization: Organization
-) -> None:
+def test_shared_name_requires_a_disambiguator(db: Session, organization: Organization) -> None:
     older = make_player(db, organization, first_name="Shared", last_name="Name")
     younger = make_player(db, organization, first_name="Shared", last_name="Name")
     older.date_of_birth = date(2008, 1, 1)

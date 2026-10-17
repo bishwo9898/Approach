@@ -160,6 +160,7 @@
         "type": "string"
       },
       "BattedBallOut": {
+        "description": "One measured batted ball. Every field here was measured, not derived.",
         "properties": {
           "event_number": {
             "anyOf": [
@@ -190,12 +191,24 @@
               }
             ],
             "title": "Launch Angle Deg"
+          },
+          "pitch_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch Velocity Mph"
           }
         },
         "required": [
           "event_number",
           "exit_velocity_mph",
           "launch_angle_deg",
+          "pitch_velocity_mph",
           "in_sweet_spot"
         ],
         "title": "BattedBallOut",
@@ -418,6 +431,28 @@
             ],
             "title": "Average Exit Velocity Mph"
           },
+          "average_launch_angle_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Launch Angle Deg"
+          },
+          "average_pitch_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Pitch Velocity Mph"
+          },
           "batted_balls": {
             "title": "Batted Balls",
             "type": "integer"
@@ -488,6 +523,17 @@
             ],
             "title": "Last Session"
           },
+          "measured_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measured Rate"
+          },
           "pitches_faced": {
             "title": "Pitches Faced",
             "type": "integer"
@@ -521,25 +567,6 @@
               }
             ],
             "title": "Sweet Spot Rate"
-          },
-          "swings": {
-            "title": "Swings",
-            "type": "integer"
-          },
-          "whiff_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Whiff Rate"
-          },
-          "whiffs": {
-            "title": "Whiffs",
-            "type": "integer"
           }
         },
         "required": [
@@ -555,14 +582,14 @@
           "has_data",
           "has_trend",
           "pitches_faced",
-          "swings",
-          "whiffs",
-          "whiff_rate",
           "batted_balls",
+          "measured_rate",
           "best_exit_velocity_mph",
           "average_exit_velocity_mph",
+          "average_launch_angle_deg",
           "sweet_spot_count",
           "sweet_spot_rate",
+          "average_pitch_velocity_mph",
           "best_exit_velocity_change",
           "average_exit_velocity_change",
           "buckets"
@@ -594,6 +621,17 @@
             ],
             "title": "Average Launch Angle Deg"
           },
+          "average_pitch_velocity_mph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Pitch Velocity Mph"
+          },
           "batted_balls": {
             "title": "Batted Balls",
             "type": "integer"
@@ -616,12 +654,16 @@
             "title": "Contact",
             "type": "array"
           },
-          "groups": {
-            "items": {
-              "$ref": "#/components/schemas/PitchGroupSplitOut"
-            },
-            "title": "Groups",
-            "type": "array"
+          "hardest_ball_launch_angle_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hardest Ball Launch Angle Deg"
           },
           "insights": {
             "items": {
@@ -629,6 +671,17 @@
             },
             "title": "Insights",
             "type": "array"
+          },
+          "measured_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measured Rate"
           },
           "opponent_name": {
             "anyOf": [
@@ -684,46 +737,12 @@
             ],
             "title": "Sweet Spot Rate"
           },
-          "swing_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Swing Rate"
-          },
-          "swings": {
-            "title": "Swings",
-            "type": "integer"
-          },
-          "taken": {
-            "title": "Taken",
-            "type": "integer"
-          },
           "videos": {
             "items": {
               "$ref": "#/components/schemas/SessionVideoOut"
             },
             "title": "Videos",
             "type": "array"
-          },
-          "whiff_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Whiff Rate"
-          },
-          "whiffs": {
-            "title": "Whiffs",
-            "type": "integer"
           }
         },
         "required": [
@@ -733,18 +752,15 @@
           "session_type",
           "opponent_name",
           "pitches_faced",
-          "taken",
-          "swings",
-          "whiffs",
-          "whiff_rate",
-          "swing_rate",
           "batted_balls",
+          "measured_rate",
           "best_exit_velocity_mph",
           "average_exit_velocity_mph",
           "average_launch_angle_deg",
+          "hardest_ball_launch_angle_deg",
           "sweet_spot_count",
           "sweet_spot_rate",
-          "groups",
+          "average_pitch_velocity_mph",
           "contact",
           "insights",
           "videos"
@@ -1817,97 +1833,6 @@
           "source_status"
         ],
         "title": "PersonalRecordOut",
-        "type": "object"
-      },
-      "PitchGroupSplitOut": {
-        "properties": {
-          "average_exit_velocity_mph": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Average Exit Velocity Mph"
-          },
-          "average_pitch_velocity_mph": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Average Pitch Velocity Mph"
-          },
-          "batted_balls": {
-            "title": "Batted Balls",
-            "type": "integer"
-          },
-          "best_exit_velocity_mph": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Best Exit Velocity Mph"
-          },
-          "enough_to_judge": {
-            "title": "Enough To Judge",
-            "type": "boolean"
-          },
-          "group": {
-            "title": "Group",
-            "type": "string"
-          },
-          "label": {
-            "title": "Label",
-            "type": "string"
-          },
-          "seen": {
-            "title": "Seen",
-            "type": "integer"
-          },
-          "swings": {
-            "title": "Swings",
-            "type": "integer"
-          },
-          "whiff_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Whiff Rate"
-          },
-          "whiffs": {
-            "title": "Whiffs",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "group",
-          "label",
-          "seen",
-          "swings",
-          "whiffs",
-          "whiff_rate",
-          "batted_balls",
-          "average_pitch_velocity_mph",
-          "average_exit_velocity_mph",
-          "best_exit_velocity_mph",
-          "enough_to_judge"
-        ],
-        "title": "PitchGroupSplitOut",
         "type": "object"
       },
       "PlayerOverviewOut": {
