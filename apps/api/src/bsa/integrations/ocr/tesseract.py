@@ -1,8 +1,17 @@
 """Tesseract text recognition, for where Apple's Vision is not available.
 
-Used by the containerised API. Configured for a uniform block of text, which
-is what a rendered table is, and told to keep its confidence per word so the
-caller can see how sure it was.
+Used by the containerised API.
+
+The work here is turning Tesseract's output into the shape the table reader
+expects. Tesseract reports one box per **word**, so "PITCH SPEED" arrives as
+two boxes and a header match on "pitch speed" finds nothing; grouping by its
+own line numbers goes too far the other way and merges a whole table row into
+one string. Neither is a cell.
+
+So words are regrouped into cells: joined when the gap between them is an
+ordinary space, split when it is a column gap. The threshold is a multiple of
+text height rather than a pixel count, so it holds at any zoom or display
+scale -- the same reason the table reader measures rows that way.
 
 A caveat worth stating plainly: this engine has not been measured against real
 TrackMan screenshots the way the Vision engine has, where 60 pitches came back
@@ -46,13 +55,13 @@ class TesseractOcrEngine:
         except Exception as exc:  # pragma: no cover -- binary missing or image unreadable
             raise OcrUnavailableError(f"Tesseract could not read {image.name}: {exc}") from exc
 
-        lines: list[TextLine] = []
+        words: list[TextLine] = []
         for index, text in enumerate(data["text"]):
             word = (text or "").strip()
             if not word:
                 continue
             confidence = float(data["conf"][index])
-            lines.append(
+            words.append(
                 TextLine(
                     text=word,
                     # Tesseract reports -1 where it has no opinion.
@@ -63,4 +72,73 @@ class TesseractOcrEngine:
                     height=float(data["height"][index]),
                 )
             )
-        return lines
+        return group_words_into_cells(words)
+
+
+#: A gap wider than this many multiples of text height separates columns
+#: rather than words. An ordinary space runs about a third of the height; the
+#: gap between table columns is several times it, so the two do not overlap and
+#: the exact value is not delicate.
+COLUMN_GAP_RATIO = 1.2
+
+#: Words on the same visual line, as a fraction of text height. Matches the
+#: tolerance the table reader uses for the same reason.
+SAME_LINE_RATIO = 0.6
+
+
+def group_words_into_cells(
+    words: list[TextLine],
+    *,
+    column_gap_ratio: float = COLUMN_GAP_RATIO,
+    same_line_ratio: float = SAME_LINE_RATIO,
+) -> list[TextLine]:
+    """Join words into cells, splitting where a column gap falls.
+
+    Pure and separately testable, because this is where a Tesseract reading
+    goes wrong: too eager and two columns merge into one unparseable cell, too
+    shy and "PITCH SPEED" never matches a header.
+    """
+    if not words:
+        return []
+
+    rows: list[list[TextLine]] = []
+    for word in sorted(words, key=lambda w: (w.center_y, w.x)):
+        placed = False
+        for row in rows:
+            reference = sum(w.height for w in row) / len(row)
+            if abs(word.center_y - row[0].center_y) <= reference * same_line_ratio:
+                row.append(word)
+                placed = True
+                break
+        if not placed:
+            rows.append([word])
+
+    cells: list[TextLine] = []
+    for row in rows:
+        ordered = sorted(row, key=lambda w: w.x)
+        group = [ordered[0]]
+        for word in ordered[1:]:
+            previous = group[-1]
+            gap = word.x - (previous.x + previous.width)
+            if gap > previous.height * column_gap_ratio:
+                cells.append(_join(group))
+                group = [word]
+            else:
+                group.append(word)
+        cells.append(_join(group))
+    return cells
+
+
+def _join(group: list[TextLine]) -> TextLine:
+    left = min(w.x for w in group)
+    top = min(w.y for w in group)
+    right = max(w.x + w.width for w in group)
+    bottom = max(w.y + w.height for w in group)
+    return TextLine(
+        text=" ".join(w.text for w in group),
+        confidence=min(w.confidence for w in group),
+        x=left,
+        y=top,
+        width=right - left,
+        height=bottom - top,
+    )

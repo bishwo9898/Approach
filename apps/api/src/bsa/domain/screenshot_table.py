@@ -68,6 +68,12 @@ class ColumnSpec:
     pattern: re.Pattern[str]
     low: float
     high: float
+    #: TrackMan always prints this column to exactly one decimal place -- 250
+    #: values in the reference export, not one of them without a decimal point.
+    #: So a reading that arrives without one lost it, and "2.8" became "28".
+    #: That is the failure a range check cannot see, because the wrong value
+    #: lands comfortably inside the plausible range.
+    one_decimal: bool = False
     #: Clock face ("12:45"), not a number.
     is_clock: bool = False
     #: Feet and inches (`5'2"`), which becomes a decimal number of feet.
@@ -75,15 +81,21 @@ class ColumnSpec:
 
 
 SPECS: tuple[ColumnSpec, ...] = (
-    ColumnSpec(Column.PITCH_SPEED, re.compile(r"pitch\W*speed"), 10.0, 120.0),
+    ColumnSpec(Column.PITCH_SPEED, re.compile(r"pitch\W*speed"), 10.0, 120.0, one_decimal=True),
     ColumnSpec(Column.TOTAL_SPIN, re.compile(r"total\W*spin"), 0.0, 5000.0),
     ColumnSpec(Column.TILT, re.compile(r"^tilt$"), 0.0, 0.0, is_clock=True),
     ColumnSpec(Column.RELEASE_HEIGHT, re.compile(r"release\W*height"), 0.0, 9.0, is_feet=True),
-    ColumnSpec(Column.VERTICAL_MOVEMENT, re.compile(r"vert\W*mov"), -40.0, 40.0),
-    ColumnSpec(Column.HORIZONTAL_MOVEMENT, re.compile(r"horz\W*mov|horiz\W*mov"), -40.0, 40.0),
-    ColumnSpec(Column.EXIT_SPEED, re.compile(r"exit\W*speed"), 10.0, 140.0),
+    ColumnSpec(Column.VERTICAL_MOVEMENT, re.compile(r"vert\W*mov"), -40.0, 40.0, one_decimal=True),
+    ColumnSpec(
+        Column.HORIZONTAL_MOVEMENT,
+        re.compile(r"horz\W*mov|horiz\W*mov"),
+        -40.0,
+        40.0,
+        one_decimal=True,
+    ),
+    ColumnSpec(Column.EXIT_SPEED, re.compile(r"exit\W*speed"), 10.0, 140.0, one_decimal=True),
     ColumnSpec(Column.HIT_SPIN, re.compile(r"^spin\W*rate$"), 0.0, 10000.0),
-    ColumnSpec(Column.LAUNCH_ANGLE, re.compile(r"launch\W*angle"), -90.0, 90.0),
+    ColumnSpec(Column.LAUNCH_ANGLE, re.compile(r"launch\W*angle"), -90.0, 90.0, one_decimal=True),
 )
 
 #: The columns the hitting analytics are actually built from.
@@ -96,9 +108,28 @@ SPECS: tuple[ColumnSpec, ...] = (
 #: whole pitch, and anywhere else it only empties the cell.
 MEASUREMENT_COLUMNS = frozenset({Column.EXIT_SPEED, Column.LAUNCH_ANGLE})
 
-#: TrackMan prints this where it has no measurement. Several dashes, because
-#: OCR picks whichever of them it likes the look of.
-ABSENT = {"-", "--", "\u2014", "\u2013", "\u2212", ""}
+#: What TrackMan prints where it has no measurement, and every mark OCR
+#: returns in its place. The dash is a single thin horizontal stroke, which is
+#: the hardest thing on the page to recognize: Vision drops it entirely and
+#: Tesseract reports it as ">", "~" or "_".
+#:
+#: Every glyph here is one no column could ever legitimately contain, which is
+#: what makes reading them as "no measurement" safe. A lone "." is deliberately
+#: absent from this set: it is a plausible remnant of a mangled number, and
+#: treating it as "absent" could quietly erase a real reading.
+ABSENT = {
+    "",
+    "-",
+    "--",
+    "\u2014",  # em dash
+    "\u2013",  # en dash
+    "\u2212",  # minus sign
+    ">",
+    "<",
+    "~",
+    "_",
+    "=",
+}
 
 #: `#66`, but also `*#54`, `X #42`, `8 #41` and `• #30`.
 #:
@@ -397,6 +428,22 @@ def read_table(cells: list[Cell]) -> TableRead:
                     )
                 )
                 continue
+            if spec.one_decimal and "." not in text.replace("\u00b0", ""):
+                # The decimal point is gone. Its position is not in doubt --
+                # this column always carries exactly one -- but the correction
+                # is still only suggested, because a value nobody checked is
+                # the thing this whole module exists to avoid.
+                problems.append(
+                    RowProblem(
+                        event,
+                        column.value,
+                        f"{text!r} has no decimal point, and this column always has "
+                        f"one; the reading is probably {number / 10:g}",
+                        blocking=column in MEASUREMENT_COLUMNS,
+                    )
+                )
+                continue
+
             if not (spec.low <= number <= spec.high):
                 # A dropped decimal point is by far the most common way a
                 # correct reading lands out of range: "11.5" comes back as

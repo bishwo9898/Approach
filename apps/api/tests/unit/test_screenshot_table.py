@@ -170,21 +170,42 @@ class TestRefusals:
         assert any(p.column == "release_height_ft" for p in read.notices)
 
     def test_a_value_outside_its_range_is_refused(self) -> None:
-        """115 degrees of vertical break is not a reading, it is a misread."""
-        read = read_table(grid([["#1", "78.0", "1599", "-", "5'", "115", "-", "-", "-", "-"]]))
+        """115.0 mph off the bat is not a reading, it is a misread."""
+        row = ["#1", "78.0", "1599", "-", "5'", "-", "-", "155.0", "-", "12.0"]
+        read = read_table(grid([row]))
 
-        problem = next(p for p in read.problems if p.column == "induced_vertical_movement_in")
+        problem = next(p for p in read.problems if p.column == "exit_speed_mph")
         assert "outside the plausible range" in problem.message
-        assert read.rows[0].values["induced_vertical_movement_in"] is None
+        assert read.rows[0].values["exit_speed_mph"] is None
 
-    def test_a_dropped_decimal_point_is_suggested_never_applied(self) -> None:
-        """The commonest OCR error with an obvious fix, which is exactly why a
-        human confirms it rather than the parser silently applying it."""
-        read = read_table(grid([["#1", "78.0", "1599", "-", "5'", "115", "-", "-", "-", "-"]]))
+    def test_a_dropped_decimal_point_is_caught_by_the_column_format(self) -> None:
+        """The failure a range check cannot see: "2.8" read as "28" lands
+        comfortably inside the plausible range. TrackMan prints this column to
+        one decimal every time -- 250 values in the reference export, not one
+        without -- so a reading with no decimal point lost it."""
+        row = ["#1", "78.0", "1599", "-", "5'", "28", "-", "-", "-", "-"]
+        read = read_table(grid([row]))
 
         problem = next(p for p in read.problems if p.column == "induced_vertical_movement_in")
-        assert "would be 11.5" in problem.message
+        assert "no decimal point" in problem.message
+        assert "probably 2.8" in problem.message
+        # Suggested, never applied.
         assert read.rows[0].values["induced_vertical_movement_in"] is None
+
+    def test_a_dropped_decimal_in_a_measurement_withholds_the_pitch(self) -> None:
+        row = ["#1", "78.0", "1599", "-", "5'", "-", "-", "881", "-", "12.0"]
+        read = read_table(grid([row]))
+
+        assert [p.column for p in read.blocking_problems] == ["exit_speed_mph"]
+        assert "probably 88.1" in read.blocking_problems[0].message
+
+    def test_an_integer_column_is_not_suspected_of_losing_a_point(self) -> None:
+        """Spin is always printed whole; 1599 is a reading, not a misread."""
+        row = ["#1", "78.0", "1599", "-", "5'", "-", "-", "-", "-", "-"]
+        read = read_table(grid([row]))
+
+        assert read.rows[0].values["total_spin_rpm"] == 1599.0
+        assert read.problems == [] or all(not p.blocking for p in read.problems)
 
     def test_a_gap_in_the_pitch_numbers_is_reported(self) -> None:
         """The check that catches a row OCR dropped entirely, which no
