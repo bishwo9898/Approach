@@ -149,7 +149,10 @@ Re-run it with the next athlete's export as more data arrives; no code changes.
 ### From screenshots
 
 TrackMan's pitch table can be imported straight from screenshots, on the coach's
-**Data Health** page. They are read with OCR, reconciled with each other,
+**Imports** page. Pick the athlete first — the CSV is then written under their
+canonical name and their TrackMan identity is registered, so the pitches attach
+to them on import instead of waiting in the mapping queue. With 63 shared names
+on this roster, that is the step that cannot be left to a name match. They are read with OCR, reconciled with each other,
 archived alongside the CSV they produce, and imported.
 
 What the screenshots need:
@@ -314,6 +317,22 @@ through a single point; and a week with no session stays in the chart as a
 not bat. Those states are not placeholders to be replaced later: they are the
 view, telling the truth about how much it knows, and they fill in on their own
 as sessions are imported.
+
+### Video
+
+A coach uploads clips on the **Media** page, filed under one athlete, and they
+appear on that athlete's own page.
+
+The database never holds the bytes — it holds a reference and the provider's own
+asset id, which is what a takedown needs. Cloudinary stores the file as an
+**authenticated** asset: a default Cloudinary URL is public to anyone who has
+it, and this is footage of minors, so playback links are signed per request and
+expire. Deleting a clip removes it at the provider too, because a row deleted on
+its own leaves the file hosted.
+
+`BSA_MEDIA_PROVIDER=local` writes to the object store and serves it without
+authentication. It exists so the upload path works on a laptop, and the API
+**refuses to start** with it set in staging or production.
 
 Personal records and the metric catalog exist in the backend and are tested,
 but they are not on screen yet.

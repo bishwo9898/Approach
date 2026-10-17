@@ -54,6 +54,10 @@ services:
       BSA_TEST_DATABASE_URL: postgresql+psycopg://bsa:bsa@db:5432/bsa_test
       # Apple Vision cannot run in a Linux container; see the Dockerfile.
       BSA_OCR_ENGINE: tesseract
+      # Development only: serves video without authentication, and the API
+      # refuses this outside development. Set the Cloudinary variables and
+      # switch to "cloudinary" to exercise the real path locally.
+      BSA_MEDIA_PROVIDER: local
       BSA_OBJECT_STORE_BACKEND: local
       BSA_OBJECT_STORE_LOCAL_ROOT: /data/objectstore
       # Both spellings of the same host. A browser pointed at 127.0.0.1:3000

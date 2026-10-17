@@ -59,6 +59,17 @@ services:
         fromDatabase:
           name: bsa-postgres
           property: connectionString
+      # Athlete video. "local" is refused here -- it serves footage of minors
+      # without authentication -- so Cloudinary is required. Set the three
+      # credentials in the dashboard; they are never committed.
+      - key: BSA_MEDIA_PROVIDER
+        value: cloudinary
+      - key: BSA_CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: BSA_CLOUDINARY_API_KEY
+        sync: false
+      - key: BSA_CLOUDINARY_API_SECRET
+        sync: false
       - key: BSA_OBJECT_STORE_BACKEND
         value: local
       - key: BSA_OBJECT_STORE_LOCAL_ROOT
