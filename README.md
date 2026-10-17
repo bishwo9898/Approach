@@ -146,6 +146,38 @@ ingests the session, and prints a coach and an athlete login.
 
 Re-run it with the next athlete's export as more data arrives; no code changes.
 
+### From screenshots
+
+TrackMan's pitch table can be imported straight from screenshots, on the coach's
+**Data Health** page. They are read with OCR, reconciled with each other,
+archived alongside the CSV they produce, and imported.
+
+What the screenshots need:
+
+- **The header row must be visible** — `PITCH SPEED … LAUNCH ANGLE`. Columns are
+  identified by name, so a screenshot without it is refused rather than guessed
+  at. Reading values into columns by position is how an exit speed silently
+  becomes a spin rate.
+- **Overlap them by a row or two.** A pitch that appears in two screenshots is
+  read twice, and a disagreement between them withholds that pitch — the
+  overlap is a check, not waste.
+- Keep the pitch numbers (`# 41`) in frame. They are what detects a row OCR
+  dropped: the table runs without gaps, so a jump from #64 to #62 is caught.
+
+Measured against the real export, five screenshots of a 66-pitch session:
+**349 of 349 readable values correct, 60 pitches recovered, and exit speed and
+launch angle identical to the vendor CSV on all 60.** Six values were refused
+rather than guessed, each reported by pitch and column.
+
+Nothing is approximated. A value outside its column's physical range, a cell
+that is neither a number nor TrackMan's dash, a repeated pitch number or a gap
+in the sequence all stop that pitch being used and say why. Where the obvious
+explanation is a dropped decimal point — `11.5` read as `115` — it is
+*suggested* and never applied.
+
+The engine is configurable (`BSA_OCR_ENGINE`). Apple Vision is the one these
+numbers come from and is macOS-only; the container runs Tesseract.
+
 **On the Docker stack, ingest inside the container.** An import writes the raw
 file to the object store *and* a row to the database, and those must be the same
 machine's. Running the script on the host against the container's database

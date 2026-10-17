@@ -79,6 +79,11 @@ class Settings(BaseSettings):
     clerk_issuer: str | None = None
     clerk_audience: str | None = None
 
+    #: Which OCR engine converts screenshots. "vision" is macOS-only and is
+    #: the one measured against real TrackMan screenshots; "tesseract" runs in
+    #: the container. There is no automatic fallback between them.
+    ocr_engine: str = "vision"
+
     trackman_provider: str = "csv"
     futures_provider: str = "manual"
 

@@ -214,6 +214,55 @@
         "title": "BattedBallOut",
         "type": "object"
       },
+      "Body_convert_screenshots_api_v1_imports_trackman_screenshots_post": {
+        "properties": {
+          "competition": {
+            "default": "",
+            "title": "Competition",
+            "type": "string"
+          },
+          "files": {
+            "description": "TrackMan pitch-table screenshots",
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "ingest": {
+            "default": true,
+            "title": "Ingest",
+            "type": "boolean"
+          },
+          "opponent_name": {
+            "default": "",
+            "title": "Opponent Name",
+            "type": "string"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "session_date": {
+            "format": "date",
+            "title": "Session Date",
+            "type": "string"
+          },
+          "session_time": {
+            "default": "",
+            "title": "Session Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "files",
+          "player_name",
+          "session_date"
+        ],
+        "title": "Body_convert_screenshots_api_v1_imports_trackman_screenshots_post",
+        "type": "object"
+      },
       "Body_upload_trackman_csv_api_v1_imports_trackman_csv_post": {
         "properties": {
           "file": {
@@ -226,6 +275,49 @@
           "file"
         ],
         "title": "Body_upload_trackman_csv_api_v1_imports_trackman_csv_post",
+        "type": "object"
+      },
+      "ConversionProblemOut": {
+        "description": "Something the reader would not accept, and where.",
+        "properties": {
+          "blocking": {
+            "title": "Blocking",
+            "type": "boolean"
+          },
+          "column": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column"
+          },
+          "event_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Number"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_number",
+          "column",
+          "message",
+          "blocking"
+        ],
+        "title": "ConversionProblemOut",
         "type": "object"
       },
       "CreatePlayerIn": {
@@ -2045,6 +2137,109 @@
         "title": "Role",
         "type": "string"
       },
+      "ScreenshotConversionOut": {
+        "description": "The result of turning screenshots into a CSV.",
+        "properties": {
+          "batted_balls": {
+            "title": "Batted Balls",
+            "type": "integer"
+          },
+          "batter_name_in_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batter Name In Image"
+          },
+          "csv_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Csv Key"
+          },
+          "csv_text": {
+            "title": "Csv Text",
+            "type": "string"
+          },
+          "first_pitch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Pitch"
+          },
+          "image_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Image Keys",
+            "type": "array"
+          },
+          "imported": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImportResultOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_pitch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Pitch"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "pitches": {
+            "title": "Pitches",
+            "type": "integer"
+          },
+          "problems": {
+            "items": {
+              "$ref": "#/components/schemas/ConversionProblemOut"
+            },
+            "title": "Problems",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pitches",
+          "batted_balls",
+          "first_pitch",
+          "last_pitch",
+          "batter_name_in_image",
+          "ok",
+          "problems",
+          "csv_key",
+          "image_keys",
+          "csv_text"
+        ],
+        "title": "ScreenshotConversionOut",
+        "type": "object"
+      },
       "SessionOut": {
         "properties": {
           "hit_count": {
@@ -2911,6 +3106,48 @@
           }
         },
         "summary": "Upload Trackman Csv",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/v1/imports/trackman/screenshots": {
+      "post": {
+        "description": "Read a set of screenshots into a CSV, and optionally import it.\n\nScreenshots are converted, archived alongside the CSV they produced, and\nonly then imported -- and **only if every pitch read cleanly.** A single\nunreadable value stops the import and comes back named, because a number\nnobody checked is worse than a number nobody has.\n\nPass `ingest=false` to convert and archive without importing, which is how\nto inspect the CSV first.",
+        "operationId": "convert_screenshots_api_v1_imports_trackman_screenshots_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_convert_screenshots_api_v1_imports_trackman_screenshots_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScreenshotConversionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Convert Screenshots",
         "tags": [
           "imports"
         ]

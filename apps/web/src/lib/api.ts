@@ -28,6 +28,7 @@ import type {
   PlayerOverview,
   PlayerSummary,
   ResolveIdentityResult,
+  ScreenshotConversion,
   SignIn,
   SyncJob,
   TimeRange,
@@ -272,6 +273,30 @@ export const api = {
     // Content-Type is deliberately not set: the browser must add the multipart
     // boundary itself.
     return request<ImportResult>(`/api/v1/imports/trackman/csv${qs({ force })}`, {
+      method: "POST",
+      body: form,
+    });
+  },
+
+  /**
+   * Convert TrackMan screenshots into a CSV, archive both, and import when
+   * every pitch read cleanly. Nothing is imported if anything was refused.
+   */
+  convertScreenshots: (input: {
+    files: File[];
+    playerName: string;
+    sessionDate: string;
+    opponentName?: string;
+    ingest?: boolean;
+  }) => {
+    const form = new FormData();
+    for (const file of input.files) form.append("files", file);
+    form.append("player_name", input.playerName);
+    form.append("session_date", input.sessionDate);
+    form.append("opponent_name", input.opponentName ?? "");
+    form.append("ingest", String(input.ingest ?? true));
+    // Content-Type is deliberately unset: the browser adds the boundary.
+    return request<ScreenshotConversion>("/api/v1/imports/trackman/screenshots", {
       method: "POST",
       body: form,
     });

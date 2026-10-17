@@ -579,3 +579,39 @@ class HittingPeriodSummaryOut(ApiModel):
     average_exit_velocity_change: PeriodComparisonOut
 
     buckets: list[TrendBucketOut]
+
+
+# -- screenshot conversion ---------------------------------------------------
+
+
+class ConversionProblemOut(ApiModel):
+    """Something the reader would not accept, and where."""
+
+    event_number: int | None
+    column: str | None
+    message: str
+    #: False for things worth knowing that change no value -- chiefly a dash
+    #: OCR did not emit, which reads as "no measurement" either way.
+    blocking: bool
+
+
+class ScreenshotConversionOut(ApiModel):
+    """The result of turning screenshots into a CSV."""
+
+    pitches: int
+    batted_balls: int
+    first_pitch: int | None
+    last_pitch: int | None
+    #: The athlete named in the table's own Batter row, when it was on screen.
+    #: Advisory: the account the pitches are filed under comes from the form.
+    batter_name_in_image: str | None
+    #: True when every pitch read cleanly. False means rows were withheld.
+    ok: bool
+    problems: list[ConversionProblemOut]
+    #: Where the CSV and the screenshots were archived.
+    csv_key: str | None
+    image_keys: list[str]
+    #: The CSV itself, so a coach can check it before anything is imported.
+    csv_text: str
+    #: Set when the CSV was also run through ingestion.
+    imported: ImportResultOut | None = None

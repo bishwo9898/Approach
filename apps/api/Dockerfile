@@ -27,6 +27,14 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ---- runtime --------------------------------------------------------------
 FROM python:3.12-slim AS runtime
 
+# tesseract is the OCR engine this image uses: Apple Vision, which the
+# screenshot reader was measured against, is macOS-only. Everything downstream
+# validates what it is handed, so a weaker reader produces more refusals rather
+# than wrong numbers.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd --create-home --uid 10001 bsa && \
     mkdir -p /data/objectstore && \
     chown bsa:bsa /data/objectstore

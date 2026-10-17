@@ -71,6 +71,10 @@ export type ImportDetail = Schemas["ImportDetailOut"];
 export type ImportIssue = Schemas["ImportIssueOut"];
 export type ImportResult = Schemas["ImportResultOut"];
 
+/** Turning TrackMan screenshots into a CSV. */
+export type ScreenshotConversion = Schemas["ScreenshotConversionOut"];
+export type ConversionProblem = Schemas["ConversionProblemOut"];
+
 // -- hitting session report -------------------------------------------------
 
 export type HittingReport = Schemas["HittingSessionReportOut"];

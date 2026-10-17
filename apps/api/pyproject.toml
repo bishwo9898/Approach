@@ -20,9 +20,19 @@ dependencies = [
     # Argon2id password hashing. OWASP's first recommendation, and the
     # alternative is hand-rolling a KDF encoding, which is where this goes wrong.
     "argon2-cffi>=23.1",
+    # Screenshot conversion. Pillow decodes the image; pytesseract drives the
+    # tesseract-ocr binary the container installs.
+    "pillow>=11.0",
+    "pytesseract>=0.3.13",
 ]
 
 [project.optional-dependencies]
+macos = [
+    # Apple Vision, the engine measured against real TrackMan screenshots.
+    # macOS only, so it is not in the base dependencies the Linux image builds.
+    "pyobjc-framework-Vision>=10.0",
+    "pyobjc-framework-Quartz>=10.0",
+]
 dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
@@ -70,6 +80,12 @@ packages = ["bsa"]
 plugins = ["pydantic.mypy"]
 warn_unused_ignores = true
 disallow_untyped_decorators = false
+
+[[tool.mypy.overrides]]
+# Apple's frameworks ship no stubs. The Vision engine is macOS-only and is
+# exercised by hand against real screenshots, not by the type checker.
+module = ["Vision", "Quartz", "pytesseract", "PIL", "PIL.*"]
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]

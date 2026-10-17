@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
+from typing import Annotated
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from bsa.api import mappers, schemas
 from bsa.api.deps import (
@@ -14,14 +15,16 @@ from bsa.api.deps import (
     DbSession,
     StaffPrincipal,
 )
+from bsa.core.config import Settings, get_settings
 from bsa.core.errors import ConflictError, NotFoundError, ValidationError
 from bsa.core.logging import get_logger
 from bsa.db.models import ExternalPlayerIdentity
 from bsa.db.repositories import imports as imports_repo
 from bsa.db.repositories import players as players_repo
 from bsa.domain.enums import AuditAction, IdentityResolutionStatus
+from bsa.integrations.ocr import get_ocr_engine
 from bsa.integrations.trackman.schema import SourcePayload
-from bsa.services import audit
+from bsa.services import audit, screenshots
 from bsa.services.ingestion import IngestionService
 
 router = APIRouter(tags=["imports"])
@@ -258,4 +261,83 @@ def resolve_identity(
         player=mappers.player_summary(player),
         imports_reprocessed=len(reprocessed),
         new_personal_records=recovered_records,
+    )
+
+
+@router.post("/imports/trackman/screenshots", response_model=schemas.ScreenshotConversionOut)
+def convert_screenshots(
+    db: DbSession,
+    principal: StaffPrincipal,
+    object_store: CurrentObjectStore,
+    settings: Annotated[Settings, Depends(get_settings)],
+    provider: CurrentTrackmanProvider,
+    files: Annotated[list[UploadFile], File(description="TrackMan pitch-table screenshots")],
+    player_name: Annotated[str, Form()],
+    session_date: Annotated[date, Form()],
+    opponent_name: Annotated[str, Form()] = "",
+    session_time: Annotated[str, Form()] = "",
+    competition: Annotated[str, Form()] = "",
+    ingest: Annotated[bool, Form()] = True,
+) -> schemas.ScreenshotConversionOut:
+    """Read a set of screenshots into a CSV, and optionally import it.
+
+    Screenshots are converted, archived alongside the CSV they produced, and
+    only then imported -- and **only if every pitch read cleanly.** A single
+    unreadable value stops the import and comes back named, because a number
+    nobody checked is worse than a number nobody has.
+
+    Pass `ingest=false` to convert and archive without importing, which is how
+    to inspect the CSV first.
+    """
+    images = [
+        screenshots.UploadedImage(filename=f.filename or "screenshot.png", data=f.file.read())
+        for f in files
+    ]
+    if not images:
+        raise ValidationError("attach at least one screenshot")
+
+    result = screenshots.convert(
+        get_ocr_engine(settings),
+        object_store,
+        images,
+        player_name=player_name.strip(),
+        session_date=session_date,
+        opponent_name=opponent_name.strip(),
+        session_time=session_time.strip(),
+        competition=competition.strip(),
+    )
+
+    imported = None
+    if ingest and result.ok:
+        service = IngestionService(db, principal.organization, provider, object_store)
+        outcome = service.ingest(
+            SourcePayload(
+                data=result.csv_text.encode("utf-8"),
+                filename=f"screenshots-{session_date.isoformat()}.csv",
+                import_type="screenshot",
+            )
+        )
+        db.commit()
+        imported = mappers.import_result(outcome)
+
+    return schemas.ScreenshotConversionOut(
+        pitches=result.pitches,
+        batted_balls=result.batted_balls,
+        first_pitch=result.first_pitch,
+        last_pitch=result.last_pitch,
+        batter_name_in_image=result.batter_name,
+        ok=result.ok,
+        problems=[
+            schemas.ConversionProblemOut(
+                event_number=p.event_number,
+                column=p.column,
+                message=p.message,
+                blocking=p.blocking,
+            )
+            for p in result.problems
+        ],
+        csv_key=result.csv_key,
+        image_keys=result.image_keys,
+        csv_text=result.csv_text,
+        imported=imported,
     )

@@ -53,17 +53,10 @@ REQUIRED = frozenset(
         "opponent_name",
         "session_date_display",
         "event_number",
-        "marker_shape",
         "pitch_speed_mph",
     }
 )
 
-#: Marker shape -> what the batter did.
-#:
-#: Read off the source export and confirmed against it: across 66 pitches,
-#: `circle` never carried a batted ball (0/32), `crossed_circle` almost never
-#: (1/13, a measured foul), and `square` usually did (15/21). The shapes encode
-#: the batter's response, which is the single most useful thing in the file.
 #: Marker shapes the export is known to use. Kept as a *vocabulary check*
 #: only: an unfamiliar shape is worth reporting, but no shape is translated
 #: into a swing, a take or a miss.

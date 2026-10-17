@@ -197,6 +197,34 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/imports/trackman/screenshots": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Convert Screenshots
+     * @description Read a set of screenshots into a CSV, and optionally import it.
+     *
+     *     Screenshots are converted, archived alongside the CSV they produced, and
+     *     only then imported -- and **only if every pitch read cleanly.** A single
+     *     unreadable value stops the import and comes back named, because a number
+     *     nobody checked is worse than a number nobody has.
+     *
+     *     Pass `ingest=false` to convert and archive without importing, which is how
+     *     to inspect the CSV first.
+     */
+    post: operations["convert_screenshots_api_v1_imports_trackman_screenshots_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/imports/{import_id}": {
     parameters: {
       query?: never;
@@ -835,10 +863,59 @@ export interface components {
       /** Pitch Velocity Mph */
       pitch_velocity_mph: number | null;
     };
+    /** Body_convert_screenshots_api_v1_imports_trackman_screenshots_post */
+    Body_convert_screenshots_api_v1_imports_trackman_screenshots_post: {
+      /**
+       * Competition
+       * @default
+       */
+      competition: string;
+      /**
+       * Files
+       * @description TrackMan pitch-table screenshots
+       */
+      files: string[];
+      /**
+       * Ingest
+       * @default true
+       */
+      ingest: boolean;
+      /**
+       * Opponent Name
+       * @default
+       */
+      opponent_name: string;
+      /** Player Name */
+      player_name: string;
+      /**
+       * Session Date
+       * Format: date
+       */
+      session_date: string;
+      /**
+       * Session Time
+       * @default
+       */
+      session_time: string;
+    };
     /** Body_upload_trackman_csv_api_v1_imports_trackman_csv_post */
     Body_upload_trackman_csv_api_v1_imports_trackman_csv_post: {
       /** File */
       file: string;
+    };
+    /**
+     * ConversionProblemOut
+     * @description Something the reader would not accept, and where.
+     */
+    ConversionProblemOut: {
+      /** Blocking */
+      blocking: boolean;
+      /** Column */
+      column: string | null;
+      /** Event Number */
+      event_number: number | null;
+      /** Message */
+      message: string;
     };
     /**
      * CreatePlayerIn
@@ -1464,6 +1541,33 @@ export interface components {
      * @enum {string}
      */
     Role: "ADMIN" | "COACH" | "PLAYER";
+    /**
+     * ScreenshotConversionOut
+     * @description The result of turning screenshots into a CSV.
+     */
+    ScreenshotConversionOut: {
+      /** Batted Balls */
+      batted_balls: number;
+      /** Batter Name In Image */
+      batter_name_in_image: string | null;
+      /** Csv Key */
+      csv_key: string | null;
+      /** Csv Text */
+      csv_text: string;
+      /** First Pitch */
+      first_pitch: number | null;
+      /** Image Keys */
+      image_keys: string[];
+      imported?: components["schemas"]["ImportResultOut"] | null;
+      /** Last Pitch */
+      last_pitch: number | null;
+      /** Ok */
+      ok: boolean;
+      /** Pitches */
+      pitches: number;
+      /** Problems */
+      problems: components["schemas"]["ConversionProblemOut"][];
+    };
     /** SessionOut */
     SessionOut: {
       /**
@@ -1941,6 +2045,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ImportResultOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  convert_screenshots_api_v1_imports_trackman_screenshots_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": components["schemas"]["Body_convert_screenshots_api_v1_imports_trackman_screenshots_post"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScreenshotConversionOut"];
         };
       };
       /** @description Validation Error */
